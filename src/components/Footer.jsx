@@ -12,19 +12,19 @@ export default function Footer() {
   const socialLinks = [
     { 
       icon: Instagram, 
-      href: "https://instagram.com/hackingzone", 
+      href: "https://instagram.com/@pirmakhmatov_", 
       label: "Instagram", 
       color: "hover:text-pink-400" 
     },
     { 
       icon: MessageCircle, 
-      href: "https://t.me/hackingzone", 
+      href: "https://t.me/pirmaxmatovs", 
       label: "Telegram", 
       color: "hover:text-blue-400" 
     },
     { 
       icon: Facebook, 
-      href: "https://facebook.com/hackingzone", 
+      href: "https://facebook.com/pirmaxmatov", 
       label: "Facebook", 
       color: "hover:text-blue-600" 
     },
@@ -36,7 +36,7 @@ export default function Footer() {
     },
     { 
       icon: Github, 
-      href: "https://github.com/hackingzone", 
+      href: "https://github.com/pirmakhmatov", 
       label: "GitHub", 
       color: "hover:text-gray-300" 
     },
