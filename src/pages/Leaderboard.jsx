@@ -327,24 +327,25 @@ export default function Leaderboard() {
       achievements: []
     },
     // Add current user if not in top 10
-    ...(user && !leaderboardData.find(p => p.username === user.username) ? [{
-      id: 25,
-      username: user.username,
-      xp: user.xp || 450,
-      levelsCompleted: user.completedLevels?.length || 2,
-      badges: user.badges?.length || 1,
-      averageTime: "45:30",
-      rank: 25,
-      previousRank: 28,
-      avatar: "👤",
-      progress: 20,
-      joinDate: "2024-03-01",
-      rankName: "Recruit",
-      streak: 2,
-      lastActive: "Just now",
-      country: "🌍",
-      achievements: ["Newcomer"]
-    }] : [])
+  //   ...(user && !leaderboardData.find(p => p.username === user.username) ? [{
+  //     id: 25,
+  //     username: user.username,
+  //     xp: user.xp || 450,
+  //     levelsCompleted: user.completedLevels?.length || 2,
+  //     badges: user.badges?.length || 1,
+  //     averageTime: "45:30",
+  //     rank: 25,
+  //     previousRank: 28,
+  //     avatar: "👤",
+  //     progress: 20,
+  //     joinDate: "2024-03-01",
+  //     rankName: "Recruit",
+  //     streak: 2,
+  //     lastActive: "Just now",
+  //     country: "🌍",
+  //     achievements: ["Newcomer"]
+  //   }] : [])
+  // ];
   ];
 
   // Filter and sort data

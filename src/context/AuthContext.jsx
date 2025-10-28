@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
 
 const AuthContext = createContext();
@@ -9,9 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // FIXED: process.env removed, direct URL used
-  const API_URL = 'http://localhost:5000/api';
-
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -19,26 +15,11 @@ export const AuthProvider = ({ children }) => {
         const storedUser = localStorage.getItem('hackingZoneUser');
 
         if (storedToken && storedUser) {
-          // Verify token is still valid
-          const response = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${storedToken}`
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setToken(storedToken);
-            setUser(data.data.user);
-          } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem('hackingZoneToken');
-            localStorage.removeItem('hackingZoneUser');
-          }
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        // Clear invalid tokens on error
         localStorage.removeItem('hackingZoneToken');
         localStorage.removeItem('hackingZoneUser');
       } finally {
@@ -47,34 +28,36 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, [API_URL]);
+  }, []);
 
   const login = async (username, password) => {
     try {
       setIsLoading(true);
       setError(null);
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const mockUser = {
+        id: Date.now(),
+        username,
+        email: `${username}@hacking-zone.com`,
+        rank: 'Recruit',
+        xp: 450,
+        level: 1,
+        completedLevels: [1, 2],
+        badges: ['Web Defender', 'Phish Buster'],
+        joinDate: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      };
 
-      const data = await response.json();
+      const mockToken = `mock_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      setUser(data.data.user);
-      setToken(data.token);
+      setUser(mockUser);
+      setToken(mockToken);
       
-      localStorage.setItem('hackingZoneToken', data.token);
-      localStorage.setItem('hackingZoneUser', JSON.stringify(data.data.user));
+      localStorage.setItem('hackingZoneToken', mockToken);
+      localStorage.setItem('hackingZoneUser', JSON.stringify(mockUser));
 
-      return { success: true, user: data.data.user };
+      return { success: true, user: mockUser };
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -87,28 +70,30 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       setError(null);
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const response = await fetch(`${API_URL}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email, password, confirmPassword }),
-      });
+      const mockUser = {
+        id: Date.now(),
+        username,
+        email,
+        rank: 'Recruit',
+        xp: 0,
+        level: 1,
+        completedLevels: [],
+        badges: ['Newcomer'],
+        joinDate: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      };
 
-      const data = await response.json();
+      const mockToken = `mock_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
-      }
-
-      setUser(data.data.user);
-      setToken(data.token);
+      setUser(mockUser);
+      setToken(mockToken);
       
-      localStorage.setItem('hackingZoneToken', data.token);
-      localStorage.setItem('hackingZoneUser', JSON.stringify(data.data.user));
+      localStorage.setItem('hackingZoneToken', mockToken);
+      localStorage.setItem('hackingZoneUser', JSON.stringify(mockUser));
 
-      return { success: true, user: data.data.user };
+      return { success: true, user: mockUser };
     } catch (error) {
       setError(error.message);
       return { success: false, error: error.message };
@@ -121,7 +106,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     setError(null);
-    
     localStorage.removeItem('hackingZoneToken');
     localStorage.removeItem('hackingZoneUser');
     localStorage.removeItem('hackingZoneGameData');
@@ -133,44 +117,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUserData = async () => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        updateUser(data.data.user);
-      }
-    } catch (error) {
-      console.error('Error refreshing user data:', error);
+    const storedUser = localStorage.getItem('hackingZoneUser');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
   };
 
   const updateUserProgress = async (progressData) => {
-    if (!token) return;
-
+    if (!user) return;
     try {
-      const response = await fetch(`${API_URL}/auth/update-progress`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(progressData)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        updateUser(data.data.user);
-        return { success: true, user: data.data.user };
-      } else {
-        throw new Error('Failed to update progress');
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const updatedUser = {
+        ...user,
+        ...progressData,
+        xp: progressData.xp !== undefined ? progressData.xp : user.xp
+      };
+      updateUser(updatedUser);
+      return { success: true, user: updatedUser };
     } catch (error) {
       console.error('Error updating user progress:', error);
       return { success: false, error: error.message };
@@ -182,13 +145,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    // State
     user,
     token,
     isLoading,
     error,
-    
-    // Actions
     login,
     signup,
     logout,
@@ -196,8 +156,6 @@ export const AuthProvider = ({ children }) => {
     refreshUserData,
     updateUserProgress,
     clearError,
-    
-    // Computed values
     isAuthenticated: !!user && !!token,
     userRank: user?.rank || 'Recruit',
     userXP: user?.xp || 0,

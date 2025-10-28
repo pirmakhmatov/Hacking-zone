@@ -10,7 +10,7 @@ import {
   Trophy, Zap, Shield, Terminal, Brain, Search,
   Filter, BarChart3, Target, Award, Crown, Sparkles
 } from "lucide-react";
-import WebSecurity from "./Learning/courses/WebSecurity";
+
 export default function Learning() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,7 +28,7 @@ export default function Learning() {
     { id: "crypto", name: "Cryptography", icon: Shield, count: 2, color: "green" }
   ];
 
-  // Complete courses data
+  // Complete courses data with page routes
   const courses = [
     {
       id: 1,
@@ -49,7 +49,6 @@ export default function Learning() {
       instructor: "Alex Chen",
       lastUpdated: "2024-01-15",
       features: ["Hands-on Labs", "Real Scenarios", "Certificate"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample1",
       page: "web-security"
     },
     {
@@ -71,7 +70,6 @@ export default function Learning() {
       instructor: "Sarah Johnson",
       lastUpdated: "2024-02-01",
       features: ["Live Exercises", "Tools Training", "CTF Challenges"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample2",
       page: "network-pentesting"
     },
     {
@@ -93,7 +91,6 @@ export default function Learning() {
       instructor: "Mike Rodriguez",
       lastUpdated: "2024-01-20",
       features: ["Malware Analysis", "Debugging", "Binary Exploitation"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample3",
       page: "reverse-engineering"
     },
     {
@@ -115,7 +112,6 @@ export default function Learning() {
       instructor: "Dr. Emily White",
       lastUpdated: "2024-02-10",
       features: ["Algorithm Study", "Code Implementation", "Security Protocols"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample4",
       page: "cryptography"
     },
     {
@@ -137,7 +133,6 @@ export default function Learning() {
       instructor: "CTF Team",
       lastUpdated: "2024-02-15",
       features: ["Step-by-Step", "Multiple CTFs", "Strategy Guides"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample5",
       page: "ctf-walkthroughs"
     },
     {
@@ -159,7 +154,6 @@ export default function Learning() {
       instructor: "David Kim",
       lastUpdated: "2024-01-25",
       features: ["Command Line", "Scripting", "Tool Setup"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample6",
       page: "linux-ethical-hacking"
     },
     {
@@ -181,7 +175,6 @@ export default function Learning() {
       instructor: "Lisa Wang",
       lastUpdated: "2024-02-20",
       features: ["Case Studies", "Detection Methods", "Prevention"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample7",
       page: "social-engineering"
     },
     {
@@ -203,7 +196,6 @@ export default function Learning() {
       instructor: "James Wilson",
       lastUpdated: "2024-02-05",
       features: ["Hands-on Testing", "Security Config", "Tools Usage"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample8",
       page: "wireless-security"
     },
     {
@@ -225,7 +217,6 @@ export default function Learning() {
       instructor: "Forensics Team",
       lastUpdated: "2024-02-12",
       features: ["Evidence Handling", "Analysis Tools", "Case Work"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample9",
       page: "digital-forensics"
     },
     {
@@ -247,7 +238,6 @@ export default function Learning() {
       instructor: "Security Analysts",
       lastUpdated: "2024-01-30",
       features: ["Case Analysis", "Defense Strategies", "Threat Intelligence"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample10",
       page: "apt-threats"
     },
     {
@@ -269,7 +259,6 @@ export default function Learning() {
       instructor: "Code Security Team",
       lastUpdated: "2024-02-18",
       features: ["Code Review", "Best Practices", "Vulnerability Prevention"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample11",
       page: "secure-coding"
     },
     {
@@ -291,7 +280,6 @@ export default function Learning() {
       instructor: "CERT Team",
       lastUpdated: "2024-02-08",
       features: ["Response Plans", "Team Coordination", "Recovery Procedures"],
-      youtubeUrl: "https://youtube.com/playlist?list=PL_sample12",
       page: "incident-response"
     }
   ];
@@ -383,13 +371,6 @@ export default function Learning() {
         duration: 0.5,
         ease: "easeOut"
       }
-    }
-  };
-
-  const handleStartCourse = (courseId) => {
-    if (!isAuthenticated) {
-      // Redirect to login or show modal
-      return;
     }
   };
 

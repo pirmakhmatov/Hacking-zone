@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { GameProvider } from "./context/GameContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -10,6 +11,20 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
+// Import all course components
+import WebSecurity from "./pages/Learning/courses/WebSecurity";
+import NetworkPentesting from "./pages/Learning/courses/NetworkPentesting";
+import ReverseEngineering from "./pages/Learning/courses/ReverseEngineering";
+import Cryptography from "./pages/Learning/courses/Cryptography";
+import CTFWalkthroughs from "./pages/Learning/courses/CTFWalkthroughs";
+import LinuxEthicalHacking from "./pages/Learning/courses/LinuxEthicalHacking";
+import SocialEngineering from "./pages/Learning/courses/SocialEngineering";
+import WirelessSecurity from "./pages/Learning/courses/WirelessSecurity";
+import DigitalForensics from "./pages/Learning/courses/DigitalForensics";
+import APTThreats from "./pages/Learning/courses/APTThreats";
+import SecureCoding from "./pages/Learning/courses/SecureCoding";
+import IncidentResponse from "./pages/Learning/courses/IncidentResponse";
 
 function App() {
   return (
@@ -36,6 +51,20 @@ function App() {
                   <Route path="/about" element={<About />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
+                  
+                  {/* Learning Course Routes */}
+                  <Route path="/learning/web-security" element={<WebSecurity />} />
+                  <Route path="/learning/network-pentesting" element={<NetworkPentesting />} />
+                  <Route path="/learning/reverse-engineering" element={<ReverseEngineering />} />
+                  <Route path="/learning/cryptography" element={<Cryptography />} />
+                  <Route path="/learning/ctf-walkthroughs" element={<CTFWalkthroughs />} />
+                  <Route path="/learning/linux-ethical-hacking" element={<LinuxEthicalHacking />} />
+                  <Route path="/learning/social-engineering" element={<SocialEngineering />} />
+                  <Route path="/learning/wireless-security" element={<WirelessSecurity />} />
+                  <Route path="/learning/digital-forensics" element={<DigitalForensics />} />
+                  <Route path="/learning/apt-threats" element={<APTThreats />} />
+                  <Route path="/learning/secure-coding" element={<SecureCoding />} />
+                  <Route path="/learning/incident-response" element={<IncidentResponse />} />
                 </Routes>
               </main>
               <Footer />
