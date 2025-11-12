@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Play, BookOpen, Shield, Zap, CheckCircle, Clock, Users, Target, Download, MessageCircle, Star, Bookmark, Share2, FileText, Award, Video, Code } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Play, BookOpen, Shield, Zap, CheckCircle, Clock, Users, Target, Download, MessageCircle, Star, Bookmark, Share2, FileText, Award, Video, Code, FileDigit, Calendar, User, Save, Trash2, Cpu, Binary, Key, Lock, Sparkles } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import jsPDF from "jspdf";
 
 export default function WebSecurity() {
   const [currentVideo, setCurrentVideo] = useState("ciNHn38EyRc");
@@ -11,6 +12,72 @@ export default function WebSecurity() {
   const [notes, setNotes] = useState("");
   const [showNotes, setShowNotes] = useState(false);
   const [activeTab, setActiveTab] = useState("lessons");
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [userData, setUserData] = useState({ firstName: "", lastName: "" });
+  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [savedNotes, setSavedNotes] = useState([]);
+  const [currentNoteTitle, setCurrentNoteTitle] = useState("");
+  
+  const notesSectionRef = useRef(null);
+  const notesTextareaRef = useRef(null);
+
+  // Real downloadable files with actual content (ensure these exist in public/downloads/)
+  const resources = [
+    { 
+      name: "OWASP Top 10 2025 Guide", 
+      type: "PDF", 
+      size: "2.4 MB", 
+      icon: FileText, 
+      downloads: 1240,
+      fileUrl: "/downloads/web-security/OWASP-Top-10-2025-Guide.pdf",
+      description: "Complete guide to OWASP Top 10 web application security risks for 2025"
+    },
+    { 
+      name: "Web Security Tools Collection", 
+      type: "ZIP", 
+      size: "15.7 MB", 
+      icon: Download, 
+      downloads: 890,
+      fileUrl: "/downloads/web-security/Web-Security-Tools-Collection.zip",
+      description: "Collection of essential web security testing tools and scripts"
+    },
+    { 
+      name: "Security Best Practices Checklist", 
+      type: "PDF", 
+      size: "1.8 MB", 
+      icon: FileText, 
+      downloads: 1560,
+      fileUrl: "/downloads/web-security/Security-Best-Practices-Checklist.pdf",
+      description: "Comprehensive security checklist for web developers"
+    },
+    { 
+      name: "SQL Injection Prevention Guide", 
+      type: "PDF", 
+      size: "1.2 MB", 
+      icon: FileText, 
+      downloads: 2100,
+      fileUrl: "/downloads/web-security/SQL-Injection-Prevention-Guide.pdf",
+      description: "Detailed guide on preventing SQL injection attacks"
+    },
+    { 
+      name: "XSS Attack & Defense Examples", 
+      type: "ZIP", 
+      size: "8.3 MB", 
+      icon: Code, 
+      downloads: 670,
+      fileUrl: "/downloads/web-security/XSS-Attack-Defense-Examples.zip",
+      description: "Real-world XSS examples and protection code samples"
+    },
+    { 
+      name: "Web Application Penetration Testing Template", 
+      type: "PDF", 
+      size: "3.5 MB", 
+      icon: FileText, 
+      downloads: 980,
+      fileUrl: "/downloads/web-security/Web-App-Penetration-Testing-Template.pdf",
+      description: "Step-by-step penetration testing methodology"
+    }
+  ];
 
   const lessons = [
     {
@@ -55,19 +122,22 @@ export default function WebSecurity() {
     }
   ];
 
-  const resources = [
-    { name: "OWASP Top 10 Guide", type: "PDF", size: "3.2 MB", icon: FileText, downloads: 1240 },
-    { name: "Web Security Tools", type: "ZIP", size: "18 MB", icon: Download, downloads: 890 },
-    { name: "Security Best Practices", type: "PDF", size: "2.8 MB", icon: FileText, downloads: 1560 },
-    { name: "Code Examples", type: "ZIP", size: "12 MB", icon: Code, downloads: 670 }
-  ];
-
   const achievements = [
     { id: 1, name: "SQL Master", description: "Complete SQL Injection lesson", earned: true, icon: Shield },
     { id: 2, name: "XSS Defender", description: "Finish XSS protection module", earned: true, icon: Zap },
     { id: 3, name: "CSRF Expert", description: "Master CSRF prevention", earned: false, icon: Target },
     { id: 4, name: "Web Guardian", description: "Complete all lessons", earned: false, icon: Award }
   ];
+
+  // Auto-focus to notes section when showNotes becomes true
+  useEffect(() => {
+    if (showNotes && notesSectionRef.current) {
+      notesSectionRef.current.scrollIntoView({ behavior: 'smooth' });
+      if (notesTextareaRef.current) {
+        notesTextareaRef.current.focus();
+      }
+    }
+  }, [showNotes]);
 
   const handleLessonClick = (youtubeId) => {
     setCurrentVideo(youtubeId);
@@ -80,20 +150,301 @@ export default function WebSecurity() {
   };
 
   const handleCompleteLesson = (lessonId) => {
-    // In real app, this would update backend
     const lesson = lessons.find(l => l.id === lessonId);
     if (lesson && !lesson.completed) {
+      lesson.completed = true;
       setProgress(prev => Math.min(prev + 25, 100));
     }
   };
 
-  const handleDownloadResource = (resourceName) => {
-    // Simulate download
-    alert(`Downloading ${resourceName}...`);
+  // Real download function for individual resources
+  const handleDownloadResource = async (resource) => {
+    try {
+      const link = document.createElement('a');
+      link.href = resource.fileUrl;
+      link.download = resource.fileUrl.split('/').pop() || `${resource.name}.${resource.type.toLowerCase()}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log(`Downloading: ${resource.name}`);
+      alert(`Download started: ${resource.name}\n\nFile: ${link.download}\nSize: ${resource.size}`);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
+    }
+  };
+
+  // Download ALL resources as a single ZIP bundle
+  const handleDownloadAll = () => {
+    try {
+      const bundlePath = "/downloads/web-security/hacking_zone_websecurity.zip";
+      const link = document.createElement('a');
+      link.href = bundlePath;
+      link.download = bundlePath.split('/').pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      console.log('Downloading bundle:', bundlePath);
+    } catch (err) {
+      console.error('Bundle download failed', err);
+      alert('Unable to start bundle download. Make sure hacking_zone_websecurity.zip exists in /public/downloads/');
+    }
   };
 
   const handleRateCourse = (newRating) => {
     setRating(newRating);
+  };
+
+  // FIXED: Added missing handleShareCourse function
+  const handleShareCourse = () => {
+    setShowShareOptions(true);
+  };
+
+  const copyCourseLink = () => {
+    const courseUrl = window.location.href;
+    navigator.clipboard.writeText(courseUrl)
+      .then(() => {
+        alert("Course link copied to clipboard!");
+        setShowShareOptions(false);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        alert("Failed to copy link. Please try again.");
+      });
+  };
+
+  // Enhanced Notes Functions
+  const saveNote = () => {
+    if (!notes.trim() || !currentNoteTitle.trim()) {
+      alert("Please add both title and content for your note.");
+      return;
+    }
+
+    const newNote = {
+      id: Date.now(),
+      title: currentNoteTitle,
+      content: notes,
+      date: new Date().toLocaleDateString(),
+      lesson: lessons.find(l => l.youtubeId === currentVideo)?.title || "General Notes"
+    };
+
+    setSavedNotes(prev => [newNote, ...prev]);
+    setNotes("");
+    setCurrentNoteTitle("");
+    alert("Note saved successfully!");
+  };
+
+  const deleteNote = (noteId) => {
+    setSavedNotes(prev => prev.filter(note => note.id !== noteId));
+  };
+
+  const loadNote = (note) => {
+    setCurrentNoteTitle(note.title);
+    setNotes(note.content);
+    if (notesTextareaRef.current) {
+      notesTextareaRef.current.focus();
+    }
+  };
+
+  // FIXED CERTIFICATE FUNCTION - Now properly uses userData from component state
+  const generateCertificate = () => {
+    if (!userData.firstName || !userData.lastName) {
+      alert("⚠️ Please enter your first and last name to generate certificate");
+      return;
+    }
+
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+// Professional white background
+pdf.setFillColor(255, 255, 255);
+pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+// Top border with accent color
+pdf.setFillColor(0, 91, 187);
+pdf.rect(0, 0, pageWidth, 15, 'F');
+
+// Organization header
+pdf.setFontSize(24);
+pdf.setTextColor(0, 91, 187);
+pdf.setFont(undefined, 'bold');
+pdf.text('CYBER SECURITY ACADEMY', pageWidth / 2, 45, { align: 'center' });
+
+// Certification Number
+pdf.setFontSize(10);
+pdf.setTextColor(100, 100, 100);
+pdf.setFont(undefined, 'normal');
+pdf.text('Certification Number', pageWidth / 2, 60, { align: 'center' });
+
+pdf.setFontSize(12);
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, 'bold');
+const certNumber = 'CSA' + Array.from({length: 10}, () => 
+    Math.floor(Math.random() * 10)
+).join('');
+pdf.text(certNumber, pageWidth / 2, 70, { align: 'center' });
+
+// Main certification title
+pdf.setFontSize(28);
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, 'bold');
+pdf.text('Web Security Professional', pageWidth / 2, 100, { align: 'center' });
+
+// "This is to acknowledge that"
+pdf.setFontSize(14);
+pdf.setTextColor(100, 100, 100);
+pdf.setFont(undefined, 'normal');
+pdf.text('This is to acknowledge that', pageWidth / 2, 125, { align: 'center' });
+
+// Student Name - FIXED: Uses actual user input
+pdf.setFontSize(32);
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, 'bold');
+const studentName = `${userData.firstName} ${userData.lastName}`;
+pdf.text(studentName, pageWidth / 2, 155, { align: 'center' });
+
+// Achievement statement
+pdf.setFontSize(14);
+pdf.setTextColor(100, 100, 100);
+pdf.setFont(undefined, 'normal');
+
+const achievementLines = [
+    'has successfully completed all requirements and criteria for',
+    'Web Security Fundamentals certification through examination'
+];
+
+achievementLines.forEach((line, index) => {
+    pdf.text(line, pageWidth / 2, 180 + (index * 20), { align: 'center' });
+});
+
+// Course Title
+pdf.setFontSize(24);
+pdf.setTextColor(0, 91, 187);
+pdf.setFont(undefined, 'bold');
+pdf.text('Web Security Fundamentals', pageWidth / 2, 225, { align: 'center' });
+
+// Dates section
+const datesY = 270;
+
+// Issue Date
+pdf.setFontSize(11);
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, 'bold');
+pdf.text('Issue Date:', pageWidth / 2 - 60, datesY);
+pdf.setFont(undefined, 'normal');
+pdf.text(new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+}), pageWidth / 2 - 60, datesY + 8);
+
+// Expiry Date
+pdf.setFont(undefined, 'bold');
+pdf.text('Expiry Date:', pageWidth / 2 + 60, datesY);
+pdf.setFont(undefined, 'normal');
+const expiryDate = new Date();
+expiryDate.setFullYear(expiryDate.getFullYear() + 3);
+pdf.text(expiryDate.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+}), pageWidth / 2 + 60, datesY + 8);
+
+// Divider line
+pdf.setDrawColor(200, 200, 200);
+pdf.setLineWidth(0.5);
+pdf.line(50, datesY + 25, pageWidth - 50, datesY + 25);
+
+// Skills section
+pdf.setFontSize(12);
+pdf.setTextColor(0, 0, 0);
+pdf.setFont(undefined, 'bold');
+pdf.text('Skills Validated:', 50, datesY + 45);
+
+const skills = [
+    '• OWASP Top 10 Vulnerabilities',
+    '• SQL Injection Prevention',
+    '• Cross-Site Scripting (XSS) Defense',
+    '• CSRF Protection Mechanisms',
+    '• Web Application Security',
+    '• Secure Coding Practices'
+];
+
+pdf.setFontSize(10);
+pdf.setTextColor(80, 80, 80);
+pdf.setFont(undefined, 'normal');
+
+skills.forEach((skill, index) => {
+    pdf.text(skill, 50, datesY + 60 + (index * 12));
+});
+
+// Accreditation section
+const accreditationY = datesY + 150;
+
+pdf.setFontSize(9);
+pdf.setTextColor(100, 100, 100);
+pdf.text('INTERNATIONAL CYBER SECURITY STANDARDS', pageWidth / 2, accreditationY, { align: 'center' });
+pdf.text('ACCORDING TO GLOBAL SECURITY FRAMEWORK', pageWidth / 2, accreditationY + 6, { align: 'center' });
+
+// Signatures section
+const signatureY = accreditationY + 30;
+
+// Left signature
+pdf.setDrawColor(150, 150, 150);
+pdf.setLineWidth(0.5);
+pdf.line(80, signatureY, 150, signatureY);
+pdf.setFontSize(9);
+pdf.setTextColor(0, 0, 0);
+pdf.text('Dr. Sarah Chen', 115, signatureY + 8, { align: 'center' });
+pdf.setTextColor(100, 100, 100);
+pdf.text('Security Training Director', 115, signatureY + 15, { align: 'center' });
+
+// Right signature
+pdf.line(pageWidth - 150, signatureY, pageWidth - 80, signatureY);
+pdf.setTextColor(0, 0, 0);
+pdf.text('Michael Rodriguez', pageWidth - 115, signatureY + 8, { align: 'center' });
+pdf.setTextColor(100, 100, 100);
+pdf.text('Chief Academic Officer', pageWidth - 115, signatureY + 15, { align: 'center' });
+
+// Footer
+pdf.setFontSize(8);
+pdf.setTextColor(150, 150, 150);
+pdf.text('cybersecurity-academy.org | Verify at: cybersecurity-academy.org/verify', pageWidth / 2, pageHeight - 20, { align: 'center' });
+
+// Border
+pdf.setDrawColor(200, 200, 200);
+pdf.setLineWidth(1);
+pdf.rect(20, 20, pageWidth - 40, pageHeight - 40);
+
+// Save with professional filename
+const fileName = `WebSecurity_Certificate_${userData.firstName}_${userData.lastName}.pdf`;
+pdf.save(fileName);
+
+setShowCertificateModal(false);
+setUserData({ firstName: "", lastName: "" });
+
+setTimeout(() => {
+    alert(`✅ Certificate Generated Successfully!\n\n📄 ${fileName}\n🎓 Your achievement has been certified!\n\nCongratulations, ${userData.firstName}!`);
+}, 500);}
+
+  const downloadCertificate = () => {
+    if (progress < 100) {
+      alert("🔒 Complete all course lessons to unlock your certificate");
+      return;
+    }
+    setShowCertificateModal(true);
+  };
+
+  const handleShowNotes = () => {
+    setShowNotes(true);
+    setActiveTab("lessons");
   };
 
   const completedLessons = lessons.filter(lesson => lesson.completed).length;
@@ -110,7 +461,7 @@ export default function WebSecurity() {
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-cyan-500/3 rounded-full blur-3xl"></div>
       </div>
 
-      <motion.div className="max-w-6xl mx-auto relative z-10"
+      <motion.div className="max-w-7xl mx-auto relative z-10"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
         
         {/* Header */}
@@ -144,6 +495,7 @@ export default function WebSecurity() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={handleShareCourse}
                     className="glass p-2 border border-gray-700/50 rounded-lg text-gray-400 hover:text-cyan-400 transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
@@ -154,9 +506,9 @@ export default function WebSecurity() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-8">
+          {/* Lessons & Main Content - Left Side */}
+          <div className="xl:col-span-3 space-y-4 md:space-y-6">
             {/* Video Player */}
             <motion.div className="glass card-cyber p-4 md:p-6 border border-cyan-500/30"
               initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -242,7 +594,7 @@ export default function WebSecurity() {
                     This comprehensive course covers the most critical web application security risks as identified by OWASP Top 10. 
                     You'll learn both offensive techniques to find vulnerabilities and defensive strategies to protect applications.
                   </p>
-                  <div className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-xs md:text-sm">
                     <div className="flex items-center gap-2 text-cyan-400">
                       <Clock className="w-3 h-3 md:w-4 md:h-4" />
                       <span>4 hours total</span>
@@ -330,6 +682,123 @@ export default function WebSecurity() {
                     ))}
                   </div>
                 </motion.div>
+
+                {/* Enhanced Notes Section */}
+                <div ref={notesSectionRef}>
+                  <motion.div className="glass card-cyber p-4 md:p-6 border border-emerald-500/30"
+                    initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                      <h3 className="text-base md:text-lg font-semibold text-white flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+                        My Notes
+                      </h3>
+                      <button
+                        onClick={() => setShowNotes(!showNotes)}
+                        className="text-emerald-400 text-sm hover:text-emerald-300 transition-colors"
+                      >
+                        {showNotes ? 'Hide Notes' : 'Show Notes'}
+                      </button>
+                    </div>
+                    
+                    {showNotes && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        {/* Note Input */}
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-gray-400 text-sm mb-2">Note Title</label>
+                            <input
+                              type="text"
+                              value={currentNoteTitle}
+                              onChange={(e) => setCurrentNoteTitle(e.target.value)}
+                              placeholder="Enter note title..."
+                              className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors text-sm"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-gray-400 text-sm mb-2">Note Content</label>
+                            <textarea
+                              ref={notesTextareaRef}
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              placeholder="Take notes about SQL Injection, XSS protection, or other web security topics..."
+                              className="w-full h-32 bg-gray-800/50 border border-gray-700/50 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors resize-none text-sm"
+                            />
+                          </div>
+                          
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-xs">{notes.length}/1000 characters</span>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={saveNote}
+                                className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+                              >
+                                <Save className="w-4 h-4" />
+                                Save Note
+                              </button>
+                              <button 
+                                onClick={() => { setNotes(""); setCurrentNoteTitle(""); }}
+                                className="px-4 py-2 bg-gray-700/50 text-gray-400 rounded-lg text-sm hover:bg-gray-600/50 transition-colors"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Saved Notes */}
+                        {savedNotes.length > 0 && (
+                          <div className="mt-6">
+                            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                              <Bookmark className="w-4 h-4 text-emerald-400" />
+                              Saved Notes ({savedNotes.length})
+                            </h4>
+                            <div className="space-y-3 max-h-60 overflow-y-auto">
+                              {savedNotes.map((note) => (
+                                <div key={note.id} className="p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                      <h5 className="text-white font-medium text-sm">{note.title}</h5>
+                                      <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                                        <Calendar className="w-3 h-3" />
+                                        <span>{note.date}</span>
+                                        <span>•</span>
+                                        <User className="w-3 h-3" />
+                                        <span>{note.lesson}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => loadNote(note)}
+                                        className="p-1 text-cyan-400 hover:text-cyan-300 transition-colors"
+                                        title="Edit note"
+                                      >
+                                        <Save className="w-3 h-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => deleteNote(note.id)}
+                                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                                        title="Delete note"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p className="text-gray-300 text-sm">{note.content}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </div>
               </motion.div>
             )}
 
@@ -338,7 +807,7 @@ export default function WebSecurity() {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                 <h3 className="text-base md:text-lg font-semibold text-white mb-3 md:mb-4 flex items-center gap-2">
                   <Download className="w-4 h-4 md:w-5 md:h-5 text-blue-400" />
-                  Course Resources
+                  Course Resources ({resources.length} files)
                 </h3>
                 <div className="space-y-3">
                   {resources.map((resource, index) => {
@@ -346,24 +815,44 @@ export default function WebSecurity() {
                     return (
                       <motion.div 
                         key={index}
-                        className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 hover:border-blue-500/30 transition-colors cursor-pointer"
+                        className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg border border-gray-700/50 hover:border-blue-500/30 transition-colors cursor-pointer group"
                         whileHover={{ scale: 1.02 }}
-                        onClick={() => handleDownloadResource(resource.name)}
+                        onClick={() => handleDownloadResource(resource)}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
                             <Icon className="w-5 h-5 text-blue-400" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <div className="text-white font-medium text-sm">{resource.name}</div>
-                            <div className="text-gray-400 text-xs">{resource.type} • {resource.size} • {resource.downloads} downloads</div>
+                            <div className="text-gray-400 text-xs">{resource.description}</div>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {resource.type} • {resource.size} • {resource.downloads} downloads
+                            </div>
                           </div>
                         </div>
-                        <Download className="w-4 h-4 text-gray-400" />
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors"
+                        >
+                          <Download className="w-4 h-4 text-blue-400" />
+                        </motion.div>
                       </motion.div>
                     );
                   })}
                 </div>
+                
+                {/* Download All Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleDownloadAll}
+                  className="w-full mt-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Download All Resources (bundle)
+                </motion.button>
               </motion.div>
             )}
 
@@ -402,47 +891,10 @@ export default function WebSecurity() {
                 </div>
               </motion.div>
             )}
-
-            {/* Notes Section */}
-            <motion.div className="glass card-cyber p-4 md:p-6 border border-emerald-500/30"
-              initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <h3 className="text-base md:text-lg font-semibold text-white flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
-                  My Notes
-                </h3>
-                <button
-                  onClick={() => setShowNotes(!showNotes)}
-                  className="text-emerald-400 text-sm hover:text-emerald-300 transition-colors"
-                >
-                  {showNotes ? 'Hide' : 'Show'} Notes
-                </button>
-              </div>
-              {showNotes && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Take notes about SQL Injection, XSS protection, or other web security topics..."
-                    className="w-full h-32 bg-gray-800/50 border border-gray-700/50 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500/50 transition-colors resize-none text-sm"
-                  />
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-gray-400 text-xs">{notes.length}/500 characters</span>
-                    <button className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm hover:bg-emerald-500/30 transition-colors">
-                      Save Notes
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4 md:space-y-6">
+          {/* Sidebar - Right Side */}
+          <div className="xl:col-span-1 space-y-4 md:space-y-6">
             {/* Progress & Stats */}
             <motion.div className="glass card-cyber p-4 md:p-6 border border-emerald-500/30"
               initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
@@ -471,10 +923,26 @@ export default function WebSecurity() {
                     <div className="text-gray-400 text-xs">Lessons</div>
                   </div>
                   <div className="p-2 bg-purple-500/10 rounded border border-purple-500/20">
-                    <div className="text-purple-400 font-bold text-lg">{Math.round((completedLessons/totalLessons) * 100)}%</div>
-                    <div className="text-gray-400 text-xs">Completed</div>
+                    <div className="text-purple-400 font-bold text-lg">{resources.length}</div>
+                    <div className="text-gray-400 text-xs">Resources</div>
                   </div>
                 </div>
+
+                {/* Certificate Button */}
+                <motion.button
+                  whileHover={progress >= 100 ? { scale: 1.05 } : {}}
+                  whileTap={progress >= 100 ? { scale: 0.95 } : {}}
+                  onClick={downloadCertificate}
+                  disabled={progress < 100}
+                  className={`w-full py-2 md:py-3 font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm md:text-base ${
+                    progress >= 100
+                      ? "bg-gradient-to-r from-green-500 to-cyan-500 text-white hover:from-green-600 hover:to-cyan-600 shadow-lg shadow-green-500/25"
+                      : "bg-gray-700/50 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {progress >= 100 ? "DOWNLOAD CERTIFICATE" : "COMPLETE COURSE"}
+                </motion.button>
 
                 {/* Continue Button */}
                 <button 
@@ -492,19 +960,31 @@ export default function WebSecurity() {
               initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.6 }}>
               <h3 className="text-base md:text-lg font-semibold text-white mb-3 md:mb-4">Quick Actions</h3>
               <div className="grid grid-cols-2 gap-3">
-                <button className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-colors text-sm flex flex-col items-center gap-1">
+                <button 
+                  onClick={() => setActiveTab("resources")}
+                  className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 hover:bg-blue-500/20 transition-colors text-sm flex flex-col items-center gap-1"
+                >
                   <Download className="w-4 h-4" />
                   <span>Resources</span>
                 </button>
-                <button className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400 hover:bg-purple-500/20 transition-colors text-sm flex flex-col items-center gap-1">
+                <button 
+                  onClick={handleShareCourse}
+                  className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400 hover:bg-purple-500/20 transition-colors text-sm flex flex-col items-center gap-1"
+                >
                   <Share2 className="w-4 h-4" />
                   <span>Share</span>
                 </button>
-                <button className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 hover:bg-cyan-500/20 transition-colors text-sm flex flex-col items-center gap-1">
-                  <Bookmark className="w-4 h-4" />
+                <button 
+                  onClick={() => setIsBookmarked(!isBookmarked)}
+                  className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 hover:bg-cyan-500/20 transition-colors text-sm flex flex-col items-center gap-1"
+                >
+                  <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
                   <span>Save</span>
                 </button>
-                <button className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 hover:bg-emerald-500/20 transition-colors text-sm flex flex-col items-center gap-1">
+                <button 
+                  onClick={handleShowNotes}
+                  className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 hover:bg-emerald-500/20 transition-colors text-sm flex flex-col items-center gap-1"
+                >
                   <MessageCircle className="w-4 h-4" />
                   <span>Notes</span>
                 </button>
@@ -530,13 +1010,137 @@ export default function WebSecurity() {
                 </div>
                 <div className="flex justify-between">
                   <span>Certificate:</span>
-                  <span className="text-emerald-400">Available</span>
+                  <button 
+                    onClick={downloadCertificate}
+                    className={`${progress >= 100 ? "text-green-400 hover:text-green-300" : "text-gray-500"} transition-colors`}
+                  >
+                    {progress >= 100 ? "AVAILABLE" : "LOCKED"}
+                  </button>
+                </div>
+                <div className="flex justify-between">
+                  <span>Resources:</span>
+                  <span className="text-blue-400">{resources.length} files</span>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
       </motion.div>
+
+      {/* Share Options Modal */}
+      {showShareOptions && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass card-cyber p-6 border border-cyan-500/30 rounded-xl max-w-md w-full"
+          >
+            <h3 className="text-xl font-bold text-white mb-4">Share Course</h3>
+            <p className="text-gray-400 mb-6">Copy the course link to share with others</p>
+            <div className="flex gap-3">
+              <button
+                onClick={copyCourseLink}
+                className="flex-1 py-3 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-colors font-medium"
+              >
+                Copy Link
+              </button>
+              <button
+                onClick={() => setShowShareOptions(false)}
+                className="px-6 py-3 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700/70 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Certificate Modal - Professional Style */}
+      {showCertificateModal && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass card-cyber p-8 border border-green-500/50 rounded-2xl max-w-md w-full relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)'
+            }}
+          >
+            {/* Animated background */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-cyan-500/20 animate-pulse"></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <Sparkles className="w-6 h-6 text-green-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-green-400">Professional Certificate</h3>
+              </div>
+              
+              <p className="text-gray-300 mb-6 text-sm leading-relaxed">
+                🎓 Generate your professional Web Security certificate with official design, 
+                skills verification, and achievement recognition.
+              </p>
+              
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">First Name</label>
+                  <input
+                    type="text"
+                    value={userData.firstName}
+                    onChange={(e) => setUserData({...userData, firstName: e.target.value})}
+                    className="w-full bg-black/50 border border-green-500/30 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors"
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    value={userData.lastName}
+                    onChange={(e) => setUserData({...userData, lastName: e.target.value})}
+                    className="w-full bg-black/50 border border-green-500/30 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors"
+                    placeholder="Enter your last name"
+                  />
+                </div>
+              </div>
+              
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Award className="w-5 h-5 text-green-400" />
+                  <h4 className="text-green-400 font-semibold">CERTIFICATE FEATURES</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                  <div>• Professional Design</div>
+                  <div>• Skills Verification</div>
+                  <div>• Official Certificate ID</div>
+                  <div>• Instructor Signature</div>
+                  <div>• Completion Date</div>
+                  <div>• Organization Seal</div>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={generateCertificate}
+                  className="flex-1 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold rounded-lg hover:from-green-600 hover:to-cyan-600 transition-all duration-300 shadow-lg shadow-green-500/25 flex items-center justify-center gap-3"
+                >
+                  <FileText className="w-5 h-5" />
+                  GENERATE CERTIFICATE
+                </button>
+                <button
+                  onClick={() => setShowCertificateModal(false)}
+                  className="px-6 py-4 bg-gray-700/50 text-gray-300 rounded-lg hover:bg-gray-700/70 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

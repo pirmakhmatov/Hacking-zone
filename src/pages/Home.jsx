@@ -571,7 +571,7 @@ export default function Home() {
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            {/* Background Pattern */}
+            {/* Background Pattern */}  
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-purple-500/5 to-emerald-500/5"></div>
             
             <Rocket className="w-16 h-16 text-cyan-400 mx-auto mb-6" />
