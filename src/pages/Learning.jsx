@@ -443,7 +443,7 @@ export default function Learning() {
               Learning Center
             </h1>
           </div>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto px-4">
             Master cybersecurity with interactive courses, real-world challenges, and expert guidance. 
             Start your journey to becoming a cyber security expert.
           </p>
@@ -451,7 +451,7 @@ export default function Learning() {
 
         {/* Stats Overview */}
         <motion.section 
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 px-2"
           variants={containerVariants}
         >
           <motion.div className="glass card-cyber p-4 text-center border border-gray-700/50 rounded-xl" variants={itemVariants}>
@@ -477,26 +477,26 @@ export default function Learning() {
         </motion.section>
 
         {/* Enhanced Search Section */}
-        <motion.section className="mb-8" variants={itemVariants}>
-          <div className="glass card-cyber p-8 border border-gray-700/50 rounded-2xl backdrop-blur-xl">
-            <div className="text-center mb-8">
+        <motion.section className="mb-8 px-2" variants={itemVariants}>
+          <div className="glass card-cyber p-6 md:p-8 border border-gray-700/50 rounded-2xl backdrop-blur-xl">
+            <div className="text-center mb-6 md:mb-8">
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
                 Find Your Perfect Course
               </h2>
-              <p className="text-gray-400">
+              <p className="text-gray-400 px-2">
                 Search through our extensive library of cybersecurity courses
               </p>
             </div>
 
             {/* Enhanced Search Bar */}
-            <div className="relative max-w-2xl mx-auto mb-8">
+            <div className="relative max-w-2xl mx-auto mb-6 md:mb-8">
               <div className={`relative transition-all duration-300 ${
                 isSearchFocused ? 'scale-105' : 'scale-100'
               }`}>
                 <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2 z-10" />
                 <input
                   type="text"
-                  placeholder="Search courses by title, description, or technology..."
+                  placeholder="Search courses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
@@ -541,7 +541,7 @@ export default function Learning() {
             </div>
 
             {/* Enhanced Category Filters */}
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3">
               {categories.map((category) => {
                 const Icon = category.icon;
                 const isActive = activeCategory === category.id;
@@ -550,7 +550,7 @@ export default function Learning() {
                   <motion.button
                     key={category.id}
                     onClick={() => setActiveCategory(category.id)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-300 border backdrop-blur-sm ${
+                    className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-xl transition-all duration-300 border backdrop-blur-sm ${
                       isActive
                         ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30 shadow-lg shadow-cyan-500/20"
                         : "glass text-gray-300 hover:text-cyan-400 hover:bg-white/5 border-gray-700/50 hover:border-cyan-500/30"
@@ -560,7 +560,7 @@ export default function Learning() {
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="font-medium">{category.name}</span>
+                    <span className="font-medium text-sm md:text-base">{category.name}</span>
                     <span className="px-2 py-1 bg-gray-700/50 rounded-full text-xs font-semibold">
                       {category.count}
                     </span>
@@ -572,10 +572,10 @@ export default function Learning() {
         </motion.section>
 
         {/* Results Header */}
-        <motion.section className="flex items-center justify-between mb-6" variants={itemVariants}>
+        <motion.section className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 px-2 gap-4" variants={itemVariants}>
           <div className="flex items-center gap-4">
             <h2 className="text-2xl font-bold text-white">
-              {searchQuery ? `Search Results for "${searchQuery}"` : 'All Courses'}
+              {searchQuery ? `Results for "${searchQuery}"` : 'All Courses'}
             </h2>
             <motion.span 
               key={filteredCourses.length}
@@ -594,7 +594,7 @@ export default function Learning() {
                 <>
                   <Menu.Button className="flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white hover:bg-gray-700/50 hover:border-cyan-500/30 transition-all duration-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20">
                     <Filter className="w-4 h-4" />
-                    <span className="text-sm font-medium">Sort by: {currentSort.name}</span>
+                    <span className="text-sm font-medium">Sort: {currentSort.name}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
                   </Menu.Button>
 
@@ -651,7 +651,7 @@ export default function Learning() {
 
         {/* Courses Grid */}
         <motion.section 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 px-2"
           layout
         >
           <AnimatePresence mode="popLayout">
@@ -674,7 +674,7 @@ export default function Learning() {
                   {/* Course Image & Header */}
                   <div className="flex items-start gap-4 mb-4">
                     <motion.div 
-                      className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${course.color} flex items-center justify-center text-2xl shadow-lg`}
+                      className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${course.color} flex items-center justify-center text-2xl shadow-lg flex-shrink-0`}
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ type: "spring", stiffness: 300, damping: 10 }}
                     >
@@ -684,7 +684,7 @@ export default function Learning() {
                       <h3 className="text-lg font-semibold text-white mb-2 leading-tight group-hover:text-cyan-300 transition-colors duration-300">
                         {course.title}
                       </h3>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(course.difficulty)}`}>
                           {getLevelText(course.difficulty)}
                         </span>
@@ -698,7 +698,7 @@ export default function Learning() {
                     
                     {/* Quick Actions */}
                     <motion.div 
-                      className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-shrink-0"
                       initial={{ x: 20 }}
                       whileHover={{ x: 0 }}
                     >
@@ -823,7 +823,7 @@ export default function Learning() {
         {/* Empty State */}
         {filteredCourses.length === 0 && (
           <motion.div 
-            className="text-center py-16"
+            className="text-center py-16 px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -851,17 +851,17 @@ export default function Learning() {
 
         {/* Learning Path Section */}
         <motion.section 
-          className="glass card-cyber p-8 border border-gray-700/50 mb-12 rounded-2xl backdrop-blur-sm"
+          className="glass card-cyber p-6 md:p-8 border border-gray-700/50 mb-12 rounded-2xl backdrop-blur-sm mx-2"
           variants={itemVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
         >
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 md:mb-8">
             <h2 className="text-2xl md:text-3xl font-bold text-gradient mb-3 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
               Recommended Learning Path
             </h2>
-            <p className="text-gray-400">
+            <p className="text-gray-400 px-2">
               Follow this structured path to become a cybersecurity expert step by step
             </p>
           </div>
