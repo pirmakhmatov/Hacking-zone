@@ -182,9 +182,10 @@ export default function Navbar() {
                       </span>
                     </div>
                   </div>
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-emerald-400 rounded-full flex items-center justify-center border-2 border-white/20 group-hover:border-cyan-400/50 transition-colors">
-                    <User className="w-5 h-5 text-black" />
-                  </div>
+                  {/* <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-emerald-400 rounded-full flex items-center justify-center border-2 border-white/20 group-hover:border-cyan-400/50 transition-colors"> */}
+                   <img src="/logo1.png" alt="Logo"  className="w-10 h-10 rounded-full text-black" />
+                    {/* <User className="w-5 h-5 text-black" /> */}
+                  {/* </div> */}
                   <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                     isUserMenuOpen ? 'rotate-180' : ''
                   }`} />
@@ -202,9 +203,10 @@ export default function Navbar() {
                     >
                       <div className="p-4 border-b border-gray-700/50">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-emerald-400 rounded-full flex items-center justify-center">
+                          {/* <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-emerald-400 rounded-full flex items-center justify-center">
                             <User className="w-6 h-6 text-black" />
-                          </div>
+                          </div> */}
+                          <img src="/logo1.png" alt="Logo"  className="w-10 h-10 rounded-full text-black" />
                           <div className="flex-1">
                             <h3 className="font-semibold text-white text-sm">
                               {user?.username || 'Agent'}

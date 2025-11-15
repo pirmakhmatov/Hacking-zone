@@ -1,15 +1,17 @@
-// src/pages/Levels.jsx
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { useGame } from "../context/GameContext";
+import { Menu, Transition } from "@headlessui/react";
 import { 
   Lock, Unlock, Star, Trophy, Zap, Shield, 
   Code2, Key, Network, Eye, Search, Flag,
   Award, Clock, Users, Brain, Crown, Sparkles,
   Play, CheckCircle, XCircle, AlertTriangle,
-  BarChart3, Target, Calendar, Rocket
+  BarChart3, Target, Calendar, Rocket,
+  Filter, ChevronDown, ArrowUpDown, SortAsc, SortDesc,
+  RefreshCw
 } from "lucide-react";
 
 export default function Levels() {
@@ -19,6 +21,26 @@ export default function Levels() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState("all");
   const [sortBy, setSortBy] = useState("order");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Sort options with icons and default directions
+  const sortOptions = [
+    { id: "order", name: "Level Order", icon: SortAsc, defaultDirection: "asc" },
+    { id: "difficulty", name: "Difficulty", icon: BarChart3, defaultDirection: "asc" },
+    { id: "xp", name: "XP Reward", icon: Trophy, defaultDirection: "desc" },
+    { id: "duration", name: "Duration", icon: Clock, defaultDirection: "asc" },
+    { id: "name", name: "Alphabetical", icon: SortAsc, defaultDirection: "asc" }
+  ];
+
+  // Difficulty filter options
+  const difficultyOptions = [
+    { id: "all", name: "All Difficulties", color: "gray" },
+    { id: "Easy", name: "Easy", color: "green" },
+    { id: "Medium", name: "Medium", color: "yellow" },
+    { id: "Hard", name: "Hard", color: "orange" },
+    { id: "Expert", name: "Expert", color: "red" }
+  ];
 
   // Complete game levels data matching your design
   const gameLevels = [
@@ -41,7 +63,8 @@ export default function Levels() {
       skills: ["Firewall Configuration", "Rule Management", "Traffic Analysis"],
       enemies: ["Script Kiddies", "Basic Bots"],
       story: "A mysterious entity is trying to breach your network. Configure the firewall to protect your digital fortress.",
-      unlockMessage: "Welcome to Hacking-Zone! Start your journey by mastering firewall basics."
+      unlockMessage: "Welcome to Hacking-Zone! Start your journey by mastering firewall basics.",
+      gameType: "firewall-config"
     },
     {
       id: 2,
@@ -62,7 +85,8 @@ export default function Levels() {
       skills: ["Email Analysis", "Social Engineering Detection", "URL Verification"],
       enemies: ["Phishing Gangs", "Social Engineers"],
       story: "Your company is being targeted by sophisticated phishing campaigns. Identify the threats before they cause damage.",
-      unlockMessage: "Complete Firewall Gate to learn about email security threats."
+      unlockMessage: "Complete Firewall Gate to learn about email security threats.",
+      gameType: "phishing-detection"
     },
     {
       id: 3,
@@ -83,7 +107,8 @@ export default function Levels() {
       skills: ["Password Cracking", "Hash Analysis", "Security Policies"],
       enemies: ["Brute-Force Bots", "Password Crackers"],
       story: "A hacker has stolen password hashes from your database. Secure the vault before they crack all passwords.",
-      unlockMessage: "Master phishing detection to advance to password security."
+      unlockMessage: "Master phishing detection to advance to password security.",
+      gameType: "password-security"
     },
     {
       id: 4,
@@ -104,7 +129,8 @@ export default function Levels() {
       skills: ["Cryptanalysis", "Algorithm Understanding", "Key Management"],
       enemies: ["Code Breakers", "Cryptanalysts"],
       story: "Intercept and decrypt enemy communications while protecting your own messages with strong encryption.",
-      unlockMessage: "Complete Password Vault to unlock encryption challenges."
+      unlockMessage: "Complete Password Vault to unlock encryption challenges.",
+      gameType: "encryption-challenge"
     },
     {
       id: 5,
@@ -125,7 +151,8 @@ export default function Levels() {
       skills: ["Network Scanning", "Service Detection", "Traffic Analysis"],
       enemies: ["Network Scouts", "Reconnaissance Teams"],
       story: "Scan the enemy network to gather intelligence while avoiding detection by their security systems.",
-      unlockMessage: "Master encryption to begin network exploration."
+      unlockMessage: "Master encryption to begin network exploration.",
+      gameType: "port-scanning"
     },
     {
       id: 6,
@@ -146,7 +173,8 @@ export default function Levels() {
       skills: ["SQL Injection", "Database Security", "Input Validation"],
       enemies: ["Web Hackers", "Database Raiders"],
       story: "A vulnerable web application contains sensitive data. Exploit SQL injection to access it, then secure the application.",
-      unlockMessage: "Complete network scanning to access web application security."
+      unlockMessage: "Complete network scanning to access web application security.",
+      gameType: "sql-injection"
     },
     {
       id: 7,
@@ -167,7 +195,8 @@ export default function Levels() {
       skills: ["XSS Exploitation", "Input Sanitization", "Content Security Policy"],
       enemies: ["XSS Specialists", "Web Warriors"],
       story: "A popular forum is vulnerable to XSS attacks. Demonstrate the risk and help implement proper defenses.",
-      unlockMessage: "Master SQL injection to advance to client-side attacks."
+      unlockMessage: "Master SQL injection to advance to client-side attacks.",
+      gameType: "xss-attack"
     },
     {
       id: 8,
@@ -188,7 +217,8 @@ export default function Levels() {
       skills: ["Packet Analysis", "TLS/SSL", "Certificate Management"],
       enemies: ["Network Sniffers", "Traffic Interceptors"],
       story: "An attacker is intercepting your company's communications. Detect and prevent the MITM attack.",
-      unlockMessage: "Complete XSS challenges to learn about network interception."
+      unlockMessage: "Complete XSS challenges to learn about network interception.",
+      gameType: "mitm-detection"
     },
     {
       id: 9,
@@ -209,7 +239,8 @@ export default function Levels() {
       skills: ["Forensic Analysis", "Evidence Handling", "Incident Response"],
       enemies: ["Advanced Hackers", "Incident Responders"],
       story: "A sophisticated attacker has compromised a system. Use forensic tools to uncover their methods and tracks.",
-      unlockMessage: "Master network analysis to begin forensic investigation."
+      unlockMessage: "Master network analysis to begin forensic investigation.",
+      gameType: "digital-forensics"
     },
     {
       id: 10,
@@ -230,11 +261,58 @@ export default function Levels() {
       skills: ["Comprehensive Defense", "Incident Management", "Security Architecture"],
       enemies: ["Elite Hacker Group", "APT Actors"],
       story: "A coordinated attack is targeting your entire organization. Use every skill you've learned to defend the fortress.",
-      unlockMessage: "Complete all previous levels to face the ultimate challenge."
+      unlockMessage: "Complete all previous levels to face the ultimate challenge.",
+      gameType: "final-defense"
     }
   ];
 
-  // Filter and sort levels
+  // Handle sort selection with direction toggle
+  const handleSortChange = (sortId) => {
+    if (sortId === sortBy) {
+      // Toggle direction if same sort is clicked
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Set new sort and reset to default direction
+      setSortBy(sortId);
+      const newSortOption = sortOptions.find(option => option.id === sortId);
+      setSortDirection(newSortOption.defaultDirection);
+    }
+  };
+
+  // Refresh game data from localStorage
+  const refreshGameData = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log('🔄 Manually refreshing game data...');
+      
+      // Force reload from localStorage
+      const completedLevels = JSON.parse(localStorage.getItem('hacking_zone_completed_levels') || '[]');
+      const totalXP = parseInt(localStorage.getItem('hacking_zone_total_xp') || '0');
+      const levelPasswords = JSON.parse(localStorage.getItem('hacking_zone_level_passwords') || '{}');
+      const currentLevel = parseInt(localStorage.getItem('hacking_zone_current_level') || '1');
+      const userProfile = JSON.parse(localStorage.getItem('hacking_zone_user_profile') || '{}');
+      
+      const refreshedData = {
+        completedLevels,
+        totalXP,
+        levelPasswords,
+        currentLevel,
+        userProfile
+      };
+      
+      console.log('📥 Refreshed data:', refreshedData);
+      
+      // Force component re-render by updating state
+      window.dispatchEvent(new Event('storage'));
+      
+    } catch (error) {
+      console.error('❌ Error refreshing game data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Filter and sort levels with proper bidirectional sorting
   const filteredLevels = gameLevels
     .filter(level => {
       const matchesSearch = level.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -243,14 +321,40 @@ export default function Levels() {
       return matchesSearch && matchesDifficulty;
     })
     .sort((a, b) => {
+      let comparison = 0;
+      
       switch(sortBy) {
-        case "order": return a.id - b.id;
-        case "difficulty": return a.difficultyLevel - b.difficultyLevel;
-        case "xp": return b.xp - a.xp;
-        case "duration": return a.duration.localeCompare(b.duration);
-        default: return a.id - b.id;
+        case "order": 
+          comparison = a.id - b.id;
+          break;
+        case "difficulty": 
+          comparison = a.difficultyLevel - b.difficultyLevel;
+          break;
+        case "xp": 
+          comparison = a.xp - b.xp;
+          break;
+        case "duration": 
+          // Extract numeric values from duration strings for proper sorting
+          const getDurationMinutes = (duration) => {
+            const match = duration.match(/(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+          };
+          comparison = getDurationMinutes(a.duration) - getDurationMinutes(b.duration);
+          break;
+        case "name": 
+          comparison = a.name.localeCompare(b.name);
+          break;
+        default: 
+          comparison = a.id - b.id;
       }
+      
+      // Apply direction
+      return sortDirection === "desc" ? -comparison : comparison;
     });
+
+  // Get current sort option
+  const currentSort = sortOptions.find(option => option.id === sortBy) || sortOptions[0];
+  const currentDifficulty = difficultyOptions.find(option => option.id === filterDifficulty) || difficultyOptions[0];
 
   const isLevelUnlocked = (levelId) => {
     if (!isAuthenticated) return false;
@@ -275,13 +379,21 @@ export default function Levels() {
     }
   };
 
+  const getDifficultyOptionColor = (difficultyId) => {
+    switch(difficultyId) {
+      case "Easy": return "text-green-400";
+      case "Medium": return "text-yellow-400";
+      case "Hard": return "text-orange-400";
+      case "Expert": return "text-red-400";
+      default: return "text-gray-400";
+    }
+  };
+
   const getProgressStats = () => {
     const totalLevels = gameLevels.length;
     const completedCount = gameState.completedLevels.length;
     const completionPercentage = Math.round((completedCount / totalLevels) * 100);
-    const totalXP = gameLevels
-      .filter(level => isLevelCompleted(level.id))
-      .reduce((sum, level) => sum + level.xp, 0);
+    const totalXP = gameState.totalXP;
     const availableXP = gameLevels.reduce((sum, level) => sum + level.xp, 0);
 
     return {
@@ -290,7 +402,9 @@ export default function Levels() {
       completionPercentage,
       totalXP,
       availableXP,
-      badgesEarned: gameLevels.filter(level => isLevelCompleted(level.id)).length
+      badgesEarned: gameLevels.filter(level => isLevelCompleted(level.id)).length,
+      currentRank: gameState.userProfile.rank,
+      currentLevel: gameState.currentLevel
     };
   };
 
@@ -330,24 +444,44 @@ export default function Levels() {
     }
   };
 
-  const levelCardVariants = {
-    hidden: { opacity: 0, y: 30 },
+  // Animation variants for sorted items
+  const sortedItemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.8 },
     visible: {
       opacity: 1,
       y: 0,
+      scale: 1,
       transition: {
-        duration: 0.6,
+        duration: 0.5,
         ease: "easeOut"
       }
     },
-    hover: {
-      y: -8,
+    exit: {
+      opacity: 0,
+      y: -20,
+      scale: 0.8,
       transition: {
         duration: 0.3,
-        ease: "easeOut"
+        ease: "easeIn"
       }
     }
   };
+
+  // Debug function to check localStorage
+  const debugStorage = () => {
+    console.log('🔍 Storage Debug:');
+    console.log('completedLevels:', JSON.parse(localStorage.getItem('hacking_zone_completed_levels') || '[]'));
+    console.log('totalXP:', localStorage.getItem('hacking_zone_total_xp'));
+    console.log('currentLevel:', localStorage.getItem('hacking_zone_current_level'));
+    console.log('levelPasswords:', JSON.parse(localStorage.getItem('hacking_zone_level_passwords') || '{}'));
+    console.log('userProfile:', JSON.parse(localStorage.getItem('hacking_zone_user_profile') || '{}'));
+    console.log('GameContext state:', gameState);
+  };
+
+  // Auto-refresh on component mount
+  useEffect(() => {
+    refreshGameData();
+  }, []);
 
   return (
     <div className="min-h-screen py-8 px-4 pt-24">
@@ -374,267 +508,536 @@ export default function Levels() {
         animate="visible"
       >
         {/* Header */}
-        <motion.section className="text-center mb-12" variants={itemVariants}>
+        <motion.section className="text-center mb-12 px-2" variants={itemVariants}>
           <div className="flex items-center justify-center gap-3 mb-4">
             <Trophy className="w-8 h-8 text-cyan-400" />
-            <h1 className="text-4xl md:text-5xl font-bold text-gradient">
+            <h1 className="text-4xl md:text-5xl font-bold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
               Game Levels
             </h1>
             <Flag className="w-8 h-8 text-emerald-400" />
           </div>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-6">
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-6 px-4">
             Complete challenges, earn badges, and become a cybersecurity expert through hands-on learning
           </p>
 
+          {/* Refresh Button */}
+          <div className="flex justify-center mb-4">
+            <motion.button
+              onClick={refreshGameData}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-xl hover:bg-cyan-500/30 transition-colors disabled:opacity-50"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh Progress'}
+            </motion.button>
+          </div>
+
           {/* Progress Stats */}
           <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto px-2"
             variants={statsVariants}
           >
-            <div className="glass card-cyber p-4 text-center border border-gray-700/50">
+            <div className="glass card-cyber p-4 text-center border border-gray-700/50 rounded-xl">
               <div className="text-2xl font-bold text-cyan-400 mb-1">
                 {progressStats.completedCount}/{progressStats.totalLevels}
               </div>
               <div className="text-gray-400 text-sm">Completed</div>
             </div>
-            <div className="glass card-cyber p-4 text-center border border-gray-700/50">
+            <div className="glass card-cyber p-4 text-center border border-gray-700/50 rounded-xl">
               <div className="text-2xl font-bold text-emerald-400 mb-1">
                 {progressStats.totalXP}
               </div>
               <div className="text-gray-400 text-sm">Total XP</div>
             </div>
-            <div className="glass card-cyber p-4 text-center border border-gray-700/50">
+            <div className="glass card-cyber p-4 text-center border border-gray-700/50 rounded-xl">
               <div className="text-2xl font-bold text-purple-400 mb-1">
                 {progressStats.completionPercentage}%
               </div>
               <div className="text-gray-400 text-sm">Progress</div>
             </div>
-            <div className="glass card-cyber p-4 text-center border border-gray-700/50">
+            <div className="glass card-cyber p-4 text-center border border-gray-700/50 rounded-xl">
               <div className="text-2xl font-bold text-yellow-400 mb-1">
                 {progressStats.badgesEarned}
               </div>
               <div className="text-gray-400 text-sm">Badges</div>
             </div>
           </motion.div>
+
+          {/* Rank Display */}
+          <motion.div className="mt-4 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl">
+              <Crown className="w-4 h-4 text-yellow-400" />
+              <span className="text-white font-semibold">Rank: {progressStats.currentRank}</span>
+            </div>
+          </motion.div>
+
+          {/* Current Level Display */}
+          <motion.div className="mt-2 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-cyan-500/30 rounded-xl">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span className="text-white font-semibold">Current Level: {progressStats.currentLevel}</span>
+            </div>
+          </motion.div>
+
+          {/* Debug buttons - only show in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4">
+                {/* <button
+                  onClick={debugStorage}
+                  className="text-xs text-gray-400 hover:text-gray-300 underline mr-4"
+                >
+                  Debug Storage
+                </button>
+                <button
+                  onClick={() => gameActions.debugState()}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline mr-4"
+                >
+                  Debug State
+                </button> */}
+              {/* <button
+                onClick={() => gameActions.resetGame()}
+                className="text-xs text-red-400 hover:text-red-300 underline"
+              >
+                Reset Progress
+              </button> */}
+            </div>
+          )}
         </motion.section>
 
-        {/* Controls */}
-        <motion.section className="glass card-cyber p-6 mb-8 border border-gray-700/50" variants={itemVariants}>
-          <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search levels..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500/50 transition-colors w-full"
-              />
+        {/* Enhanced Controls Section */}
+        <motion.section 
+          className="glass card-cyber p-6 mb-8 border border-gray-700/50 mx-2 rounded-2xl backdrop-blur-sm relative z-20"
+          variants={itemVariants}
+          style={{ overflow: 'visible' }}
+        >
+          <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-md w-full">
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 z-10" />
+                <input
+                  type="text"
+                  placeholder="Search levels by name or concept..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300 backdrop-blur-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Difficulty Filter */}
-              <select
-                value={filterDifficulty}
-                onChange={(e) => setFilterDifficulty(e.target.value)}
-                className="px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-              >
-                <option value="all">All Difficulties</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-                <option value="Expert">Expert</option>
-              </select>
+            {/* Enhanced Filter and Sort Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto relative z-30">
+              {/* Difficulty Filter Dropdown */}
+              <Menu as="div" className="relative">
+                {({ open }) => (
+                  <>
+                    <Menu.Button className="flex items-center gap-2 px-4 py-3 bg-gray-800 border border-gray-700/50 rounded-xl text-white hover:bg-gray-700 hover:border-cyan-500/30 transition-all duration-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 min-w-[160px] justify-between">
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4" />
+                        <span className="text-sm font-medium">{currentDifficulty.name}</span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    </Menu.Button>
 
-              {/* Sort */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-              >
-                <option value="order">Sort by Order</option>
-                <option value="difficulty">Sort by Difficulty</option>
-                <option value="xp">Sort by XP</option>
-                <option value="duration">Sort by Duration</option>
-              </select>
+                    <Transition
+                      as={motion.div}
+                      enter="transition ease-out duration-200"
+                      enterFrom="opacity-0 scale-95"
+                      enterTo="opacity-100 scale-100"
+                      leave="transition ease-in duration-150"
+                      leaveFrom="opacity-100 scale-100"
+                      leaveTo="opacity-0 scale-95"
+                    >
+                      <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800 border border-gray-700/50 rounded-xl shadow-xl shadow-black/20 z-50 focus:outline-none overflow-hidden backdrop-blur-sm">
+                        <div className="p-2">
+                          {difficultyOptions.map((option) => {
+                            const isActive = filterDifficulty === option.id;
+                            
+                            return (
+                              <Menu.Item key={option.id}>
+                                {({ active }) => (
+                                  <button
+                                    onClick={() => setFilterDifficulty(option.id)}
+                                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                                      isActive
+                                        ? 'bg-cyan-500/20 text-cyan-300'
+                                        : active
+                                        ? 'bg-gray-700 text-white'
+                                        : `text-gray-300 ${getDifficultyOptionColor(option.id)}`
+                                    }`}
+                                  >
+                                    <div className={`w-2 h-2 rounded-full ${
+                                      option.id === 'Easy' ? 'bg-green-400' :
+                                      option.id === 'Medium' ? 'bg-yellow-400' :
+                                      option.id === 'Hard' ? 'bg-orange-400' :
+                                      option.id === 'Expert' ? 'bg-red-400' : 'bg-gray-400'
+                                    }`} />
+                                    <span className="flex-1 text-left">{option.name}</span>
+                                    {isActive && (
+                                      <motion.div 
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="w-2 h-2 bg-cyan-400 rounded-full"
+                                      />
+                                    )}
+                                  </button>
+                                )}
+                              </Menu.Item>
+                            );
+                          })}
+                        </div>
+                      </Menu.Items>
+                    </Transition>
+                  </>
+                )}
+              </Menu>
+
+              {/* Sort Dropdown */}
+              <Menu as="div" className="relative">
+                {({ open }) => (
+                  <>
+                    <Menu.Button className="flex items-center gap-2 px-4 py-3 bg-gray-800 border border-gray-700/50 rounded-xl text-white hover:bg-gray-700 hover:border-cyan-500/30 transition-all duration-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 min-w-[160px] justify-between">
+                      <div className="flex items-center gap-2">
+                        <ArrowUpDown className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                          Sort: {currentSort.name} ({sortDirection === "asc" ? "↑" : "↓"})
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    </Menu.Button>
+
+                    <Transition
+                      as={motion.div}
+                      enter="transition ease-out duration-200"
+                      enterFrom="opacity-0 scale-95"
+                      enterTo="opacity-100 scale-100"
+                      leave="transition ease-in duration-150"
+                      leaveFrom="opacity-100 scale-100"
+                      leaveTo="opacity-0 scale-95"
+                    >
+                      <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right bg-gray-800 border border-gray-700/50 rounded-xl shadow-xl shadow-black/20 z-50 focus:outline-none overflow-hidden backdrop-blur-sm">
+                        <div className="p-2">
+                          <div className="px-3 py-2 text-xs text-gray-400 font-semibold border-b border-gray-700/50 mb-1">
+                            SORT BY
+                          </div>
+                          {sortOptions.map((option) => {
+                            const Icon = option.icon;
+                            const isActive = sortBy === option.id;
+                            const isCurrentDirection = isActive ? sortDirection : option.defaultDirection;
+                            
+                            return (
+                              <Menu.Item key={option.id}>
+                                {({ active }) => (
+                                  <button
+                                    onClick={() => handleSortChange(option.id)}
+                                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                                      isActive
+                                        ? 'bg-cyan-500/20 text-cyan-300'
+                                        : active
+                                        ? 'bg-gray-700 text-white'
+                                        : 'text-gray-300'
+                                    }`}
+                                  >
+                                    <Icon className="w-4 h-4" />
+                                    <span className="flex-1 text-left">{option.name}</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-xs text-gray-400 capitalize">
+                                        {isCurrentDirection}
+                                      </span>
+                                      {isActive && (
+                                        <motion.div 
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: 1 }}
+                                          className="w-2 h-2 bg-cyan-400 rounded-full"
+                                        />
+                                      )}
+                                    </div>
+                                  </button>
+                                )}
+                              </Menu.Item>
+                            );
+                          })}
+                        </div>
+                      </Menu.Items>
+                    </Transition>
+                  </>
+                )}
+              </Menu>
             </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchQuery || filterDifficulty !== "all") && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="flex flex-wrap items-center gap-2 pt-4 mt-4 border-t border-gray-700/50"
+            >
+              <span className="text-xs text-gray-400 font-medium">Active filters:</span>
+              
+              {searchQuery && (
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex items-center gap-1 bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded-full text-xs"
+                >
+                  <span>Search: "{searchQuery}"</span>
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="hover:text-cyan-100 transition-colors"
+                  >
+                    <XCircle className="w-3 h-3" />
+                  </button>
+                </motion.div>
+              )}
+              
+              {filterDifficulty !== "all" && (
+                <motion.div 
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex items-center gap-1 bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full text-xs"
+                >
+                  <span>Difficulty: {filterDifficulty}</span>
+                  <button
+                    onClick={() => setFilterDifficulty("all")}
+                    className="hover:text-purple-100 transition-colors"
+                  >
+                    <XCircle className="w-3 h-3" />
+                  </button>
+                </motion.div>
+              )}
+              
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilterDifficulty("all");
+                }}
+                className="text-xs text-gray-400 hover:text-white underline transition-colors"
+              >
+                Clear all
+              </button>
+            </motion.div>
+          )}
+        </motion.section>
+
+        {/* Results Count */}
+        <motion.section className="flex items-center justify-between mb-6 px-2" variants={itemVariants}>
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-bold text-white">
+              {searchQuery ? `Search Results for "${searchQuery}"` : 'All Game Levels'}
+            </h2>
+            <motion.span 
+              key={filteredLevels.length}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-sm font-semibold"
+            >
+              {filteredLevels.length} {filteredLevels.length === 1 ? 'level' : 'levels'}
+            </motion.span>
+          </div>
+          
+          {/* Sort Indicator */}
+          <div className="hidden sm:flex items-center gap-2 text-gray-400 text-sm">
+            <ArrowUpDown className="w-4 h-4" />
+            <span>Sorted by {currentSort.name} ({sortDirection === "asc" ? "ascending" : "descending"})</span>
           </div>
         </motion.section>
 
-        {/* Levels Grid */}
+        {/* Levels Grid with Animation */}
         <motion.section 
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 px-2"
+          layout
         >
-          {filteredLevels.map((level) => {
-            const unlocked = isLevelUnlocked(level.id);
-            const completed = isLevelCompleted(level.id);
-            const LevelIcon = level.icon;
+          <AnimatePresence mode="popLayout">
+            {filteredLevels.map((level) => {
+              const unlocked = isLevelUnlocked(level.id);
+              const completed = isLevelCompleted(level.id);
+              const LevelIcon = level.icon;
 
-            return (
-              <motion.div 
-                key={level.id}
-                className={`glass card-cyber p-6 group transition-all duration-300 border relative overflow-hidden ${
-                  completed 
-                    ? "border-emerald-500/50 bg-emerald-500/5" 
-                    : unlocked 
-                    ? "border-cyan-500/30 hover:border-cyan-500/50" 
-                    : "border-gray-600/50 opacity-60"
-                }`}
-                variants={levelCardVariants}
-                whileHover={unlocked ? "hover" : ""}
-                onClick={() => unlocked && setSelectedLevel(level)}
-              >
-                {/* Level Number */}
-                <div className="absolute top-4 right-4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              return (
+                <motion.div 
+                  key={level.id}
+                  layout
+                  variants={sortedItemVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  whileHover={{ 
+                    y: -8,
+                    transition: { duration: 0.3, ease: "easeOut" }
+                  }}
+                  className="group relative"
+                >
+                  <div className={`glass card-cyber p-6 rounded-2xl border relative overflow-hidden backdrop-blur-sm transition-all duration-300 group-hover:shadow-xl ${
                     completed 
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                      ? "border-emerald-500/50 bg-emerald-500/5 group-hover:shadow-emerald-500/10" 
                       : unlocked 
-                      ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" 
-                      : "bg-gray-600/50 text-gray-400 border border-gray-600/50"
-                  }`}>
-                    {level.id}
-                  </div>
-                </div>
-
-                {/* Level Header */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`w-14 h-14 rounded-xl ${level.gradient} flex items-center justify-center ${
-                    !unlocked && "grayscale opacity-50"
-                  }`}>
-                    <LevelIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-semibold text-white truncate">{level.name}</h3>
-                      {completed && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 200 }}
-                        >
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        </motion.div>
-                      )}
+                      ? "border-cyan-500/30 hover:border-cyan-500/50 group-hover:shadow-cyan-500/10" 
+                      : "border-gray-600/50 opacity-60"
+                  }`}
+                  onClick={() => unlocked && setSelectedLevel(level)}
+                >
+                  {/* Level Number */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${
+                      completed 
+                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
+                        : unlocked 
+                        ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" 
+                        : "bg-gray-600/50 text-gray-400 border-gray-600/50"
+                    }`}>
+                      {level.id}
                     </div>
-                    <p className="text-cyan-400 text-sm font-mono">{level.concept}</p>
                   </div>
-                </div>
 
-                {/* Description */}
-                <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
-                  {level.description}
-                </p>
+                  {/* XP Badge */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 px-2 py-1 rounded-full text-xs border border-yellow-500/30 backdrop-blur-sm">
+                      <Trophy className="w-3 h-3" />
+                      <span className="font-semibold">{level.xp} XP</span>
+                    </div>
+                  </div>
 
-                {/* Mission Preview */}
-                <div className="mb-4">
-                  <p className="text-gray-300 text-sm font-semibold mb-2 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-yellow-400" />
-                    Mission:
+                  {/* Level Header */}
+                  <div className="flex items-start gap-4 mb-4 pt-8">
+                    <div className={`w-14 h-14 rounded-xl ${level.gradient} flex items-center justify-center flex-shrink-0 ${
+                      !unlocked && "grayscale opacity-50"
+                    }`}>
+                      <LevelIcon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0 pr-8">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-cyan-300 transition-colors duration-300 truncate">
+                          {level.name}
+                        </h3>
+                        {completed && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                          >
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          </motion.div>
+                        )}
+                      </div>
+                      <p className="text-cyan-400 text-sm font-mono truncate">{level.concept}</p>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
+                    {level.description}
                   </p>
-                  <p className="text-gray-400 text-sm italic line-clamp-2">{level.mission}</p>
-                </div>
 
-                {/* Level Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="flex items-center gap-2 text-gray-400 text-sm">
-                    <Clock className="w-4 h-4" />
-                    <span>{level.duration}</span>
+                  {/* Mission Preview */}
+                  <div className="mb-4">
+                    <p className="text-gray-300 text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-yellow-400" />
+                      Mission:
+                    </p>
+                    <p className="text-gray-400 text-sm italic line-clamp-2">{level.mission}</p>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-400 text-sm">
-                    <Zap className="w-4 h-4 text-yellow-400" />
-                    <span>{level.xp} XP</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-400 text-sm">
-                    <Award className="w-4 h-4 text-purple-400" />
-                    <span className="truncate">{level.badge}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${getDifficultyColor(level.difficulty)} border`}>
-                      {level.difficulty}
-                    </span>
-                  </div>
-                </div>
 
-                {/* Skills Preview */}
-                <div className="flex flex-wrap gap-1 mb-4">
-                  {level.skills.slice(0, 3).map((skill, index) => (
-                    <span key={index} className="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded text-xs">
-                      {skill}
-                    </span>
-                  ))}
-                  {level.skills.length > 3 && (
-                    <span className="px-2 py-1 bg-gray-700/50 text-gray-400 rounded text-xs">
-                      +{level.skills.length - 3}
-                    </span>
+                  {/* Level Stats */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <Clock className="w-4 h-4" />
+                      <span>{level.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <Zap className="w-4 h-4 text-yellow-400" />
+                      <span>{level.xp} XP</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <Award className="w-4 h-4 text-purple-400" />
+                      <span className="truncate">{level.badge}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs border ${getDifficultyColor(level.difficulty)}`}>
+                        {level.difficulty}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Skills Preview */}
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {level.skills.slice(0, 3).map((skill, index) => (
+                      <span key={index} className="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded text-xs border border-cyan-500/20">
+                        {skill}
+                      </span>
+                    ))}
+                    {level.skills.length > 3 && (
+                      <span className="px-2 py-1 bg-gray-700/50 text-gray-400 rounded text-xs border border-gray-600/50">
+                        +{level.skills.length - 3}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  {unlocked ? (
+                    <Link 
+                      to={isAuthenticated ? `/level${level.id}` : "/login"}
+                      className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 border ${
+                        completed
+                          ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/20 border-emerald-500/30"
+                          : "bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/20 border-cyan-500/30"
+                      }`}
+                    >
+                      {completed ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Play Again
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4" />
+                          Start Challenge
+                        </>
+                      )}
+                    </Link>
+                  ) : (
+                    <div className="w-full py-3 rounded-xl font-semibold bg-gray-600/30 text-gray-500 flex items-center justify-center gap-2 border border-gray-600/50">
+                      <Lock className="w-4 h-4" />
+                      <span className="text-sm">
+                        {level.id === 1 ? "Login to Start" : `Complete Level ${level.prerequisites[level.prerequisites.length - 1]} to Unlock`}
+                      </span>
+                    </div>
                   )}
                 </div>
-
-                {/* Action Button */}
-                {unlocked ? (
-                  <Link 
-                    to={`/level${level.id}`}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
-                      completed
-                        ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                        : "bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30"
-                    }`}
-                  >
-                    {completed ? (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        Play Again
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Start Challenge
-                      </>
-                    )}
-                  </Link>
-                ) : (
-                  <div className="w-full py-3 rounded-lg font-semibold bg-gray-600/30 text-gray-500 flex items-center justify-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    <span>Complete Level {level.prerequisites[level.prerequisites.length - 1]} to Unlock</span>
-                  </div>
-                )}
-
-                {/* XP Badge */}
-                <div className="absolute top-4 left-4">
-                  <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full text-xs border border-yellow-500/30">
-                    <Trophy className="w-3 h-3" />
-                    <span>{level.xp} XP</span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </motion.section>
 
         {/* Badges Showcase */}
         <motion.section 
-          className="glass card-cyber p-8 border border-gray-700/50"
+          className="glass card-cyber p-6 md:p-8 border border-gray-700/50 mx-2 rounded-2xl backdrop-blur-sm"
           variants={itemVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
         >
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-gradient mb-3">
+          <div className="text-center mb-6 md:mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 mb-3">
               Earn Badges & Level Up
             </h2>
-            <p className="text-gray-400">
+            <p className="text-gray-400 px-2">
               Complete levels to unlock achievements and showcase your cybersecurity expertise
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
             {gameLevels.slice(0, 5).map((level) => {
               const completed = isLevelCompleted(level.id);
               return (
@@ -659,7 +1062,7 @@ export default function Levels() {
                       </motion.div>
                     )}
                   </div>
-                  <p className="text-gray-400 text-sm font-semibold mb-1">{level.badge}</p>
+                  <p className="text-gray-400 text-sm font-semibold mb-1 truncate px-1">{level.badge}</p>
                   <p className="text-cyan-400 text-xs">{level.xp} XP</p>
                   <p className="text-gray-500 text-xs mt-1">
                     {completed ? "Earned" : "Locked"}
@@ -673,7 +1076,7 @@ export default function Levels() {
         {/* Empty State */}
         {filteredLevels.length === 0 && (
           <motion.div 
-            className="text-center py-12"
+            className="text-center py-12 px-2"
             variants={itemVariants}
           >
             <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -681,95 +1084,99 @@ export default function Levels() {
             <p className="text-gray-400 mb-6">
               Try adjusting your search criteria or filters
             </p>
-            <button
+            <motion.button
               onClick={() => {
                 setSearchQuery("");
                 setFilterDifficulty("all");
               }}
-              className="btn-cyber"
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Show All Levels
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </motion.div>
 
       {/* Level Detail Modal */}
-      {selectedLevel && (
-        <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={() => setSelectedLevel(null)}
-        >
+      <AnimatePresence>
+        {selectedLevel && (
           <motion.div
-            className="glass card-cyber p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-cyan-500/30"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedLevel(null)}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-white">{selectedLevel.name}</h3>
-              <button
-                onClick={() => setSelectedLevel(null)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-cyan-400 font-semibold mb-2">Mission Objective</h4>
-                <p className="text-gray-300">{selectedLevel.mission}</p>
+            <motion.div
+              className="glass card-cyber p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-cyan-500/30 rounded-2xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold text-white">{selectedLevel.name}</h3>
+                <button
+                  onClick={() => setSelectedLevel(null)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
               
-              <div>
-                <h4 className="text-cyan-400 font-semibold mb-2">Story</h4>
-                <p className="text-gray-300 italic">{selectedLevel.story}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <h4 className="text-cyan-400 font-semibold mb-2">Tools & Skills</h4>
-                  <div className="space-y-1">
-                    {selectedLevel.tools.map((tool, index) => (
-                      <div key={index} className="text-gray-300 text-sm">• {tool}</div>
-                    ))}
-                  </div>
+                  <h4 className="text-cyan-400 font-semibold mb-2">Mission Objective</h4>
+                  <p className="text-gray-300">{selectedLevel.mission}</p>
                 </div>
                 
                 <div>
-                  <h4 className="text-cyan-400 font-semibold mb-2">Enemies</h4>
-                  <div className="space-y-1">
-                    {selectedLevel.enemies.map((enemy, index) => (
-                      <div key={index} className="text-gray-300 text-sm">• {enemy}</div>
-                    ))}
+                  <h4 className="text-cyan-400 font-semibold mb-2">Story</h4>
+                  <p className="text-gray-300 italic">{selectedLevel.story}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-cyan-400 font-semibold mb-2">Tools & Skills</h4>
+                    <div className="space-y-1">
+                      {selectedLevel.tools.map((tool, index) => (
+                        <div key={index} className="text-gray-300 text-sm">• {tool}</div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-cyan-400 font-semibold mb-2">Enemies</h4>
+                    <div className="space-y-1">
+                      {selectedLevel.enemies.map((enemy, index) => (
+                        <div key={index} className="text-gray-300 text-sm">• {enemy}</div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Link 
+                    to={isAuthenticated ? `/level${selectedLevel.id}` : "/login"}
+                    className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition-all duration-300 text-center flex-1"
+                    onClick={() => setSelectedLevel(null)}
+                  >
+                    {isAuthenticated ? "Start Challenge" : "Login to Play"}
+                  </Link>
+                  <button
+                    onClick={() => setSelectedLevel(null)}
+                    className="px-6 py-3 border border-gray-600 text-gray-300 rounded-xl hover:border-gray-500 hover:text-white transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex gap-4 pt-4">
-                <Link 
-                  to={`/level${selectedLevel.id}`}
-                  className="btn-cyber flex-1 text-center"
-                  onClick={() => setSelectedLevel(null)}
-                >
-                  Start Challenge
-                </Link>
-                <button
-                  onClick={() => setSelectedLevel(null)}
-                  className="px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:border-gray-500 hover:text-white transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

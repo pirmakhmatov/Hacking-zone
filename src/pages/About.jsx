@@ -19,7 +19,7 @@ const About = () => {
 
   const teamMembers = [
     {
-      name: "Pirmakhmatov Og'abek",
+      name: "Pirmakhmatov",
       role: "Lead Security Engineer",
       avatar: "🧑‍💻️",
       expertise: ["Web Security", "Penetration Testing"],
@@ -111,7 +111,7 @@ const About = () => {
   ];
 
   const stats = [
-    { value: "10,000+", label: "Active Learners", icon: Users2 },
+    { value: "100+", label: "Active Learners", icon: Users2 },
     { value: "50+", label: "Challenges", icon: Target },
     { value: "98%", label: "Completion Rate", icon: Star },
     { value: "24/7", label: "Platform Uptime", icon: Clock }
@@ -189,7 +189,7 @@ const About = () => {
             className="flex items-center justify-center gap-3 mb-6"
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
-          >  mj
+          >  
             <Shield className="w-8 h-8 text-cyan-400" />
             <h1 className="text-4xl md:text-5xl font-bold text-gradient">
               About Hacking-Zone
@@ -583,7 +583,8 @@ const About = () => {
                   
                   {/* Email */}
                   <motion.a
-                    href="mailto:o.pirmaxmatov@gmail.com"
+                    href="https://o.pirmaxmatov10@gmail.com"
+                    target="_blank"
                     className="flex items-center gap-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 transition-all duration-300 group"
                     whileHover={{ x: 5 }}
                   >
@@ -594,7 +595,7 @@ const About = () => {
                       <div className="text-white font-semibold group-hover:text-cyan-300 transition-colors">
                         Email
                       </div>
-                      <div className="text-gray-400 text-sm">o.pirmaxmatov@gmail.com</div>
+                      <div className="text-gray-400 text-sm">o.pirmaxmatov10@gmail.com</div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors" />
                   </motion.a>
@@ -738,7 +739,7 @@ const About = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Github className="w-4 h-4" />
-                  <span>github.com/hackingzone</span>
+                  <span>github.com/pirmakhmatov</span>
                 </div>
               </div>
             </div>

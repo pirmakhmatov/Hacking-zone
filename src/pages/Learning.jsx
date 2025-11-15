@@ -50,9 +50,9 @@ export default function Learning() {
       category: "web",
       level: "Beginner",
       duration: "4 hours",
-      students: 1250,
+      students: '20+',
       rating: 4.8,
-      lessons: 15,
+      lessons: 8,
       completed: gameState.completedLevels.includes(1),
       image: "🌐",
       color: "from-blue-500 to-cyan-500",
@@ -71,9 +71,9 @@ export default function Learning() {
       category: "network",
       level: "Intermediate",
       duration: "6 hours",
-      students: 890,
+      students: '10+',
       rating: 4.7,
-      lessons: 20,
+      lessons: 6,
       completed: gameState.completedLevels.includes(2),
       image: "🛜",
       color: "from-purple-500 to-pink-500",
@@ -92,9 +92,9 @@ export default function Learning() {
       category: "reverse",
       level: "Advanced",
       duration: "8 hours",
-      students: 450,
+      students: '1+',
       rating: 4.9,
-      lessons: 25,
+      lessons: 6,
       completed: gameState.completedLevels.includes(3),
       image: "🔍",
       color: "from-orange-500 to-red-500",
@@ -113,9 +113,9 @@ export default function Learning() {
       category: "crypto",
       level: "Intermediate",
       duration: "5 hours",
-      students: 670,
+      students: '10+',
       rating: 4.6,
-      lessons: 18,
+      lessons:6,
       completed: gameState.completedLevels.includes(4),
       image: "🔐",
       color: "from-green-500 to-emerald-500",
@@ -134,9 +134,9 @@ export default function Learning() {
       category: "web",
       level: "All Levels",
       duration: "3 hours",
-      students: 2100,
+      students: '10+',
       rating: 4.9,
-      lessons: 12,
+      lessons: 6,
       completed: gameState.completedLevels.includes(5),
       image: "🏆",
       color: "from-yellow-500 to-orange-500",
@@ -155,9 +155,9 @@ export default function Learning() {
       category: "network",
       level: "Beginner",
       duration: "2 hours",
-      students: 1800,
+      students: '10+',
       rating: 4.5,
-      lessons: 10,
+      lessons: 6,
       completed: gameState.completedLevels.includes(6),
       image: "🐧",
       color: "from-gray-500 to-blue-500",
@@ -176,7 +176,7 @@ export default function Learning() {
       category: "web",
       level: "Beginner",
       duration: "2.5 hours",
-      students: 950,
+      students: '30+',
       rating: 4.4,
       lessons: 8,
       completed: gameState.completedLevels.includes(7),
@@ -197,9 +197,9 @@ export default function Learning() {
       category: "network",
       level: "Intermediate",
       duration: "4.5 hours",
-      students: 720,
+      students: '1+',
       rating: 4.7,
-      lessons: 14,
+      lessons: 6,
       completed: gameState.completedLevels.includes(8),
       image: "📡",
       color: "from-indigo-500 to-purple-500",
@@ -218,9 +218,9 @@ export default function Learning() {
       category: "reverse",
       level: "Intermediate",
       duration: "5.5 hours",
-      students: 580,
+      students: '10+',
       rating: 4.8,
-      lessons: 16,
+      lessons: 6,
       completed: gameState.completedLevels.includes(9),
       image: "🔎",
       color: "from-teal-500 to-cyan-500",
@@ -239,9 +239,9 @@ export default function Learning() {
       category: "web",
       level: "Advanced",
       duration: "7 hours",
-      students: 320,
+      students: '5+',
       rating: 4.9,
-      lessons: 22,
+      lessons: 6,
       completed: gameState.completedLevels.includes(10),
       image: "🎯",
       color: "from-red-500 to-orange-500",
@@ -260,9 +260,9 @@ export default function Learning() {
       category: "web",
       level: "Intermediate",
       duration: "4 hours",
-      students: 1100,
+      students: '1+',
       rating: 4.6,
-      lessons: 13,
+      lessons: 6,
       completed: false,
       image: "💻",
       color: "from-emerald-500 to-green-500",
@@ -281,9 +281,9 @@ export default function Learning() {
       category: "network",
       level: "Advanced",
       duration: "6.5 hours",
-      students: 420,
+      students: '5+',
       rating: 4.8,
-      lessons: 19,
+      lessons: 6,
       completed: false,
       image: "🚨",
       color: "from-amber-500 to-yellow-500",
@@ -466,7 +466,7 @@ export default function Learning() {
           </motion.div>
           <motion.div className="glass card-cyber p-4 text-center border border-gray-700/50 rounded-xl" variants={itemVariants}>
             <div className="text-2xl font-bold text-purple-400 mb-1">
-              {courses.reduce((total, course) => total + course.students, 0)}+
+              110+
             </div>
             <div className="text-gray-400 text-sm">Students</div>
           </motion.div>
@@ -478,7 +478,7 @@ export default function Learning() {
 
         {/* Enhanced Search Section */}
         <motion.section className="mb-8 px-2" variants={itemVariants}>
-          <div className="glass card-cyber p-6 md:p-8 border border-gray-700/50 rounded-2xl backdrop-blur-xl">
+          <div className="glass card-cyber p-6 md:p-8 border border-gray-700/50 rounded-2xl backdrop-blur-xl relative z-20">
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
                 Find Your Perfect Course
@@ -587,8 +587,8 @@ export default function Learning() {
             </motion.span>
           </div>
           
-          {/* Enhanced Sort Dropdown */}
-          <div className="flex items-center gap-3">
+          {/* Enhanced Sort Dropdown - FIXED: Added proper z-index and background */}
+          <div className="flex items-center gap-3 relative z-30">
             <Menu as="div" className="relative">
               {({ open }) => (
                 <>
@@ -607,7 +607,7 @@ export default function Learning() {
                     leaveFrom="opacity-100 scale-100"
                     leaveTo="opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800/90 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-xl shadow-black/20 z-50 focus:outline-none overflow-hidden">
+                    <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-gray-800 border border-gray-700/50 rounded-2xl shadow-xl shadow-black/20 z-50 focus:outline-none overflow-hidden backdrop-blur-sm">
                       <div className="p-2">
                         {sortOptions.map((option) => {
                           const Icon = option.icon;
@@ -622,7 +622,7 @@ export default function Learning() {
                                     isActive
                                       ? 'bg-cyan-500/20 text-cyan-300'
                                       : active
-                                      ? 'bg-gray-700/50 text-white'
+                                      ? 'bg-gray-700 text-white'
                                       : 'text-gray-300'
                                   }`}
                                 >

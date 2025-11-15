@@ -25,6 +25,12 @@ import DigitalForensics from "./pages/Learning/courses/DigitalForensics";
 import APTThreats from "./pages/Learning/courses/APTThreats";
 import SecureCoding from "./pages/Learning/courses/SecureCoding";
 import IncidentResponse from "./pages/Learning/courses/IncidentResponse";
+import FirewallGame from "./pages/levels/FirewallGame";
+import PhishersTrap from "./pages/levels/PhishersTrap";
+import PasswordVault from "./pages/levels/PasswordVault";
+import EncryptedZone from "./pages/levels/EncryptedZone";
+import PortScanner from "./pages/levels/PortScanner";
+import SQLVaultBreach from "./pages/levels/SQLVaultBreach";
 
 function App() {
   return (
@@ -52,6 +58,12 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   
+                  <Route path="/level1" element={<FirewallGame/>}/>
+                  <Route path="/level2" element={<PhishersTrap/>}/>
+                  <Route path="/level3" element={<PasswordVault/>}/>
+                  <Route path="/level4" element={<EncryptedZone/>}/>
+                  <Route path="/level5" element={<PortScanner/>}/>
+                  <Route path="/level6" element={<SQLVaultBreach/>}/>
                   {/* Learning Course Routes */}
                   <Route path="/learning/web-security" element={<WebSecurity />} />
                   <Route path="/learning/network-pentesting" element={<NetworkPentesting />} />
@@ -65,6 +77,12 @@ function App() {
                   <Route path="/learning/apt-threats" element={<APTThreats />} />
                   <Route path="/learning/secure-coding" element={<SecureCoding />} />
                   <Route path="/learning/incident-response" element={<IncidentResponse />} />
+                  <Route path="/levels/FirewallGame.jsx" element={<FirewallGame/>}/>
+                  <Route path="/levels/PhishersTrap.jsx" element={<PhishersTrap/>}/>
+                  <Route path="/levels/PasswordVault.jsx" element={<PasswordVault/>}/>
+                  <Route path="/levels/EncryptedZone.jsx" element={<EncryptedZone/>}/>
+                  <Route path="/levels/PortScanner.jsx" element={<PortScanner/>}/>
+                  <Route path="/levels/SQLVaultBreach.jsx" element={<SQLVaultBreach/>}/>
                 </Routes>
               </main>
               <Footer />

@@ -24,7 +24,7 @@ export default function Footer() {
     },
     { 
       icon: Facebook, 
-      href: "https://facebook.com/pirmaxmatov", 
+      href: "https://facebook.com/hackingzone_community", 
       label: "Facebook", 
       color: "hover:text-blue-600" 
     },
