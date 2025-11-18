@@ -1,21 +1,17 @@
-// PortScanner.jsx - COMPLETE FIXED VERSION
-import { useState, useEffect, useRef, useCallback } from "react";
+// hacking_zone/src/pages/levels/PortScanner.jsx
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useGame } from "../../context/GameContext";
 import {
-  Shield, Play, Pause, RotateCcw, CheckCircle, XCircle,
+  Terminal, Play, Pause, RotateCcw, CheckCircle, XCircle,
   AlertTriangle, Clock, Zap, Trophy, ArrowLeft,
-  Lock, Key, Copy, Check, Eye, EyeOff, Cpu,
-  Users, Terminal, Star, Sparkles, Award,
-  Volume2, VolumeX, ChevronDown, Filter,
-  Hash, Fingerprint, UserCheck, Server,
-  Mail, Code, Binary, FileText, Scan,
-  MessageSquare, FileKey, FileSearch,
-  Network, Globe, Wifi, Radar, Search,
-  Folder, File, Trash2, Home, Settings,
-  Command, MousePointer, Keyboard, Monitor
+  Server, Network, Wifi, Eye, EyeOff, Copy, Check,
+  Search, Filter, Map, Lock, Unlock, Cpu, Users,
+  Shield, Key, HelpCircle, Command, Menu, X,
+  ChevronRight, Folder, File, HardDrive, Download, Upload,
+  Scan, Globe, Database, Mail, MessageSquare, Brain
 } from "lucide-react";
 
 export default function PortScanner() {
@@ -27,724 +23,211 @@ export default function PortScanner() {
     status: "locked",
     timeElapsed: 0,
     score: 0,
-    targetsScanned: 0,
+    targetsFound: 0,
     vulnerabilitiesFound: 0,
     level: 5,
     isPaused: false,
-    lives: 3
+    phase: "exploration"
   });
 
-  const [passwordInput, setPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [terminalInput, setTerminalInput] = useState("");
+  const [terminalHistory, setTerminalHistory] = useState([
+    { 
+      id: 1, 
+      message: "Kali Linux 2024.1 \\n \\l", 
+      type: "system",
+      timestamp: "00:00:01"
+    },
+    { 
+      id: 2, 
+      message: "scanner@hacking-zone:~$ login: scanner", 
+      type: "system",
+      timestamp: "00:00:02"
+    },
+    { 
+      id: 3, 
+      message: "password: ********", 
+      type: "system",
+      timestamp: "00:00:03"
+    },
+    { 
+      id: 4, 
+      message: "Welcome to Hacking Zone Port Scanner", 
+      type: "system",
+      timestamp: "00:00:04"
+    },
+    { 
+      id: 5, 
+      message: "Type 'help' for available commands", 
+      type: "info",
+      timestamp: "00:00:05"
+    }
+  ]);
+  const [currentDirectory, setCurrentDirectory] = useState("/home/scanner");
+  const [fileSystem, setFileSystem] = useState({});
+  const [scanResults, setScanResults] = useState([]);
+  const [activeScan, setActiveScan] = useState(null);
   const [levelPassword, setLevelPassword] = useState("");
   const [passwordCopied, setPasswordCopied] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
-  // Port scanning game state
-  const [currentTarget, setCurrentTarget] = useState("");
-  const [openPorts, setOpenPorts] = useState([]);
-  const [scanProgress, setScanProgress] = useState(0);
-  const [scanning, setScanning] = useState(false);
-  const [userPortInput, setUserPortInput] = useState("");
-  const [gameLog, setGameLog] = useState([]);
-  const [firewallDetected, setFirewallDetected] = useState(false);
-  const [activeDefenses, setActiveDefenses] = useState([]);
-
-  // Terminal simulator state
-  const [terminalInput, setTerminalInput] = useState("");
-  const [terminalHistory, setTerminalHistory] = useState([
-    { id: 1, type: "output", content: "Welcome to HackingZone Terminal v2.1" },
-    { id: 2, type: "output", content: "Type 'help' for available commands" },
-    { id: 3, type: "output", content: "" }
-  ]);
-  const [currentDir, setCurrentDir] = useState("/home/hacker");
+  const [showCommands, setShowCommands] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [commandHistory, setCommandHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [userScrolled, setUserScrolled] = useState(false);
+  const [scanAttempts, setScanAttempts] = useState(0);
+  const [failedScans, setFailedScans] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
   
-  const terminalHistoryRef = useRef(terminalHistory);
-  const audioContextRef = useRef(null);
   const terminalEndRef = useRef(null);
-  const scanIntervalRef = useRef(null);
-  const defenseIntervalRef = useRef(null);
+  const inputRef = useRef(null);
+  const terminalContainerRef = useRef(null);
 
-  // Common ports and their services
-  const commonPorts = {
-    20: "FTP Data", 21: "FTP Control", 22: "SSH", 23: "Telnet",
-    25: "SMTP", 53: "DNS", 80: "HTTP", 110: "POP3",
-    143: "IMAP", 443: "HTTPS", 993: "IMAPS", 995: "POP3S",
-    1433: "MSSQL", 3306: "MySQL", 3389: "RDP", 5432: "PostgreSQL",
-    5900: "VNC", 27017: "MongoDB"
-  };
-
-  // Target systems with vulnerabilities
-  const targetSystems = [
+  // Enhanced network targets with more complexity
+  const networkTargets = [
     {
-      ip: "192.168.1.45",
-      hostname: "web-server-01",
-      openPorts: [22, 80, 443, 3389],
-      vulnerabilities: [80, 3389],
-      description: "Web Server - RDP exposed to public",
-      difficulty: "easy",
-      os: "Windows Server 2019"
+      ip: "192.168.1.1",
+      hostname: "gateway.local",
+      os: "Linux 4.14.81",
+      security: "medium",
+      stealth: false,
+      ports: [
+        { port: 22, service: "ssh", status: "open", version: "OpenSSH 7.9p1", security: "medium", stealth: false },
+        { port: 53, service: "domain", status: "open", version: "dnsmasq 2.80", security: "high", stealth: false },
+        { port: 80, service: "http", status: "open", version: "lighttpd 1.4.53", security: "low", stealth: false },
+        { port: 443, service: "https", status: "open", version: "lighttpd 1.4.53", security: "medium", stealth: false },
+        { port: 8080, service: "http-proxy", status: "filtered", version: "unknown", security: "low", stealth: true }
+      ],
+      description: "Network Gateway Router",
+      vulnerabilities: ["Weak SSH configuration", "Web interface default credentials"],
+      required: true,
+      difficulty: "easy"
     },
     {
-      ip: "10.0.2.67", 
-      hostname: "db-primary",
-      openPorts: [21, 23, 53, 110, 1433],
-      vulnerabilities: [21, 23, 1433],
-      description: "Database Server - Clear text services active",
-      difficulty: "medium",
-      os: "Linux Ubuntu 20.04"
+      ip: "192.168.1.50",
+      hostname: "fs-corp.local",
+      os: "Windows Server 2019",
+      security: "high",
+      stealth: true,
+      ports: [
+        { port: 21, service: "ftp", status: "open", version: "FileZilla 0.9.60", security: "low", stealth: false },
+        { port: 22, service: "ssh", status: "closed", version: "OpenSSH for Windows 8.1", security: "medium", stealth: false },
+        { port: 80, service: "http", status: "open", version: "Microsoft-IIS/10.0", security: "low", stealth: false },
+        { port: 135, service: "msrpc", status: "open", version: "Microsoft Windows RPC", security: "high", stealth: true },
+        { port: 139, service: "netbios-ssn", status: "open", version: "Microsoft Windows netbios-ssn", security: "high", stealth: true },
+        { port: 443, service: "https", status: "open", version: "Microsoft-IIS/10.0", security: "medium", stealth: false },
+        { port: 445, service: "microsoft-ds", status: "open", version: "Microsoft Windows SMB", security: "critical", stealth: true },
+        { port: 3389, service: "rdp", status: "filtered", version: "Microsoft Terminal Services", security: "critical", stealth: true },
+        { port: 5985, service: "wsman", status: "open", version: "Microsoft HTTPAPI", security: "medium", stealth: false }
+      ],
+      description: "Corporate File Server - Protected",
+      vulnerabilities: ["SMB signing not required", "RDP exposed to network", "WinRM accessible"],
+      required: true,
+      difficulty: "hard"
     },
     {
-      ip: "172.16.8.123",
-      hostname: "dev-server",
-      openPorts: [22, 80, 443, 5900, 27017],
-      vulnerabilities: [5900, 27017],
-      description: "Development Server - Exposed database and VNC",
-      difficulty: "hard",
-      os: "Linux CentOS 8"
+      ip: "192.168.1.100",
+      hostname: "web-app.local",
+      os: "Ubuntu 20.04.3 LTS",
+      security: "medium",
+      stealth: false,
+      ports: [
+        { port: 22, service: "ssh", status: "open", version: "OpenSSH 8.2p1", security: "medium", stealth: false },
+        { port: 80, service: "http", status: "open", version: "Apache/2.4.41", security: "low", stealth: false },
+        { port: 443, service: "https", status: "open", version: "Apache/2.4.41", security: "medium", stealth: false },
+        { port: 3306, service: "mysql", status: "filtered", version: "MySQL 8.0.27", security: "critical", stealth: true },
+        { port: 5432, service: "postgresql", status: "open", version: "PostgreSQL 13.4", security: "high", stealth: false },
+        { port: 8080, service: "http-proxy", status: "open", version: "Apache Tomcat/9.0.56", security: "medium", stealth: false },
+        { port: 9000, service: "cslistener", status: "open", version: "Portainer 2.11.1", security: "high", stealth: false }
+      ],
+      description: "Web Application Server",
+      vulnerabilities: ["MySQL root access from network", "Tomcat default credentials", "PostgreSQL weak auth"],
+      required: true,
+      difficulty: "medium"
+    },
+    {
+      ip: "192.168.1.150",
+      hostname: "print-srv.local",
+      os: "Embedded Linux 2.6.31",
+      security: "low",
+      stealth: false,
+      ports: [
+        { port: 80, service: "http", status: "open", version: "HP JetDirect", security: "low", stealth: false },
+        { port: 443, service: "https", status: "open", version: "HP JetDirect", security: "low", stealth: false },
+        { port: 515, service: "printer", status: "open", version: "LPD", security: "medium", stealth: false },
+        { port: 631, service: "ipp", status: "open", version: "CUPS 1.4", security: "medium", stealth: false },
+        { port: 9100, service: "jetdirect", status: "open", version: "HP JetDirect", security: "high", stealth: false }
+      ],
+      description: "Network Print Server - HP LaserJet",
+      vulnerabilities: ["Default admin credentials", "JetDirect protocol exposed"],
+      required: false,
+      difficulty: "easy"
+    },
+    {
+      ip: "192.168.1.200",
+      hostname: "backup-srv.local",
+      os: "FreeBSD 12.2-RELEASE",
+      security: "high",
+      stealth: true,
+      ports: [
+        { port: 22, service: "ssh", status: "filtered", version: "OpenSSH 8.4", security: "medium", stealth: true },
+        { port: 80, service: "http", status: "closed", version: "nginx/1.18.0", security: "low", stealth: false },
+        { port: 443, service: "https", status: "open", version: "nginx/1.18.0", security: "medium", stealth: false },
+        { port: 873, service: "rsync", status: "open", version: "rsyncd 3.2.3", security: "critical", stealth: true },
+        { port: 2049, service: "nfs", status: "open", version: "NFS 4.1", security: "high", stealth: true }
+      ],
+      description: "Backup Server - Critical Infrastructure",
+      vulnerabilities: ["Rsync anonymous access", "NFS exports world-readable"],
+      required: false,
+      difficulty: "hard"
     }
   ];
 
-  // Command reference data
-  const commandCategories = [
-    {
-      title: "📁 File System",
-      icon: <Folder className="w-4 h-4" />,
-      commands: [
-        { command: "ls", description: "List directory contents" },
-        { command: "cd /home/hacker", description: "Change to home directory" },
-        { command: "cat notes.md", description: "Display file contents" },
-        { command: "pwd", description: "Show current directory" },
-        { command: "clear", description: "Clear terminal screen" }
-      ],
-      color: "blue"
-    },
-    {
-      title: "🔍 Scanning",
-      icon: <Radar className="w-4 h-4" />,
-      commands: [
-        { command: "scan 192.168.1.45", description: "Start port scan on target" },
-        { command: "scan 10.0.2.67", description: "Scan second target" },
-        { command: "scan 172.16.8.123", description: "Scan third target" },
-        { command: "vuln 80", description: "Check port vulnerability" }
-      ],
-      color: "green"
-    },
-    {
-      title: "🎯 Quick Win",
-      icon: <Zap className="w-4 h-4" />,
-      commands: [
-        { command: "scan 192.168.1.45", description: "Scan first target" },
-        { command: "vuln 80", description: "Identify HTTP vulnerability" },
-        { command: "vuln 3389", description: "Identify RDP vulnerability" },
-        { command: "scan 10.0.2.67", description: "Scan second target" },
-        { command: "vuln 21", description: "Win the game! 🏆" }
-      ],
-      color: "purple"
-    }
-  ];
-
-  // ========== UTILITY FUNCTIONS ==========
-
-  // FIXED: Enhanced game log with unique keys
-  const addGameLog = useCallback((message, type = "info") => {
-    const newLog = {
-      id: Date.now() + Math.random(),
-      message, 
-      type, 
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    setGameLog(prev => [newLog, ...prev.slice(0, 14)]);
-  }, []);
-
-  // Sound system
-  const initAudio = useCallback(() => {
-    if (!audioContextRef.current) {
-      try {
-        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      } catch (error) {
-        console.warn('Audio not supported');
-        audioContextRef.current = null;
-      }
-    }
-  }, []);
-
-  const playSound = useCallback((frequency, duration, type = 'sine') => {
-    if (!soundEnabled || !audioContextRef.current) return;
-    
-    try {
-      const oscillator = audioContextRef.current.createOscillator();
-      const gainNode = audioContextRef.current.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContextRef.current.destination);
-      
-      oscillator.frequency.value = frequency;
-      oscillator.type = type;
-      
-      gainNode.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration);
-      
-      oscillator.start(audioContextRef.current.currentTime);
-      oscillator.stop(audioContextRef.current.currentTime + duration);
-    } catch (error) {
-      console.log('Audio not supported');
-    }
-  }, [soundEnabled]);
-
-  const generateLevelPassword = useCallback(() => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return `HZ-L6-${password}`;
-  }, []);
-
-  // ========== GAME COMPLETION FUNCTIONS ==========
-
-  const completeLevel = useCallback(() => {
-    if (gameStatus.status === "running" && gameStatus.vulnerabilitiesFound >= 3) {
-      const password = generateLevelPassword();
-      setLevelPassword(password);
-      setGameStatus(prev => ({ ...prev, status: "completed" }));
-      
-      addGameLog("🎉 Level Completed! All vulnerabilities identified", "success");
-      addGameLog(`🔑 Level 6 Password: ${password}`, "success");
-      
-      const xpEarned = 300 + Math.floor(gameStatus.score / 10);
-      addGameLog(`✨ +${xpEarned} XP Earned!`, "success");
-      
-      try {
-        gameActions.completeLevel(5, xpEarned, password);
-      } catch (error) {
-        console.error('GameContext error:', error);
-      }
-      
-      playSound(1000, 0.5);
-    }
-  }, [gameStatus.status, gameStatus.vulnerabilitiesFound, gameStatus.score, generateLevelPassword, addGameLog, gameActions, playSound]);
-
-  const handleGameOver = useCallback((reason = "Too many incorrect identifications") => {
-    setGameStatus(prev => ({ ...prev, status: "failed" }));
-    addGameLog(`💀 Game Over! ${reason}`, "error");
-    playSound(200, 0.5, 'sawtooth');
-  }, [addGameLog, playSound]);
-
-  // ========== SCANNING FUNCTIONS ==========
-
-  // FIXED: Simulate port scanning progress with proper cleanup
-  const simulatePortScan = useCallback((target) => {
-    let progress = 0;
-    
-    scanIntervalRef.current = setInterval(() => {
-      if (!scanning || gameStatus.isPaused) {
-        clearInterval(scanIntervalRef.current);
-        return;
-      }
-
-      progress += 2;
-      setScanProgress(progress);
-
-      // Randomly discover ports during scan
-      if (progress % 15 === 0 && openPorts.length < target.openPorts.length) {
-        const remainingPorts = target.openPorts.filter(port => !openPorts.includes(port));
-        if (remainingPorts.length > 0) {
-          const discoveredPort = remainingPorts[0];
-          setOpenPorts(prev => [...prev, discoveredPort]);
-          addGameLog(`🔍 Port ${discoveredPort} (${commonPorts[discoveredPort]}) - OPEN`, "success");
-          playSound(600 + (discoveredPort * 2), 0.1);
-        }
-      }
-
-      if (progress >= 100) {
-        clearInterval(scanIntervalRef.current);
-        setScanning(false);
-        addGameLog(`✅ Scan complete! Found ${openPorts.length} open ports`, "success");
-        
-        // Add to terminal
-        const newHistory = [...terminalHistoryRef.current];
-        newHistory.push(
-          { id: Date.now(), type: "output", content: `Scan completed on ${target.ip}` },
-          { id: Date.now() + 1, type: "output", content: `Open ports: ${openPorts.join(', ')}` }
-        );
-        terminalHistoryRef.current = newHistory;
-        setTerminalHistory(newHistory);
-      }
-    }, 100);
-  }, [scanning, gameStatus.isPaused, openPorts, addGameLog, playSound, commonPorts]);
-
-  // Defense systems (firewalls, IDS)
-  const startDefenseSystems = useCallback(() => {
-    if (firewallDetected) {
-      addGameLog(`🛡️ Firewall detected! Some ports may be filtered`, "warning");
-    }
-
-    // Clear any existing defense interval
-    if (defenseIntervalRef.current) {
-      clearInterval(defenseIntervalRef.current);
-    }
-
-    defenseIntervalRef.current = setInterval(() => {
-      if (gameStatus.status !== "running" || gameStatus.isPaused || !scanning) {
-        clearInterval(defenseIntervalRef.current);
-        return;
-      }
-
-      // Random defense events
-      if (Math.random() > 0.8) {
-        const defenses = ["IDS Alert", "Rate Limiting", "Connection Reset", "Stealth Mode"];
-        const randomDefense = defenses[Math.floor(Math.random() * defenses.length)];
-        setActiveDefenses(prev => [...prev.slice(-2), { id: Date.now(), type: randomDefense }]);
-        addGameLog(`⚠️ ${randomDefense} activated`, "warning");
-        playSound(400, 0.2, 'square');
-      }
-    }, 5000);
-  }, [firewallDetected, gameStatus.status, gameStatus.isPaused, scanning, addGameLog, playSound]);
-
-  // FIXED: Start new scanning target with proper cleanup
-  const startNewScan = useCallback((target) => {
-    // Clear any existing scan
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-    }
-    
-    setOpenPorts([]);
-    setScanProgress(0);
-    setScanning(true);
-    setFirewallDetected(Math.random() > 0.7);
-    setUserPortInput("");
-
-    addGameLog(`🎯 Scanning: ${target.ip} (${target.hostname})`, "info");
-    addGameLog(`📝 ${target.description}`, "warning");
-    addGameLog(`💻 OS: ${target.os}`, "info");
-    
-    // Start defense systems
-    startDefenseSystems();
-    
-    // Simulate port scanning
-    simulatePortScan(target);
-  }, [startDefenseSystems, simulatePortScan, addGameLog]);
-
-  // FIXED: Enhanced vulnerability check
-  const checkVulnerability = useCallback((portNum) => {
-    if (gameStatus.status !== "running" || gameStatus.isPaused) return "invalid";
-
-    const currentTargetData = targetSystems.find(t => t.ip === currentTarget);
-    if (!currentTargetData) return "invalid";
-
-    if (currentTargetData.vulnerabilities.includes(portNum)) {
-      // Correct vulnerability identified
-      setGameStatus(prev => ({
-        ...prev,
-        vulnerabilitiesFound: prev.vulnerabilitiesFound + 1,
-        score: prev.score + 50
-      }));
-      addGameLog(`🎯 VULNERABILITY FOUND! Port ${portNum} (${commonPorts[portNum]}) is insecure`, "success");
-      playSound(800, 0.3);
-
-      if (gameStatus.vulnerabilitiesFound + 1 >= 3) {
-        setTimeout(completeLevel, 1000);
-      } else {
-        setTimeout(() => {
-          const nextTarget = targetSystems.find(t => t.ip !== currentTarget);
-          if (nextTarget) {
-            setCurrentTarget(nextTarget.ip);
-            startNewScan(nextTarget);
+  // Initialize file system
+  useEffect(() => {
+    const initFileSystem = {
+      "/home/scanner": {
+        type: "directory",
+        contents: {
+          "scan_results": { 
+            type: "directory", 
+            contents: {
+              "readme.txt": { 
+                type: "file", 
+                content: "Scan results will be saved here automatically.\nUse 'cat scan_results/<target_ip>.txt' to view detailed reports." 
+              }
+            }
+          },
+          "tools": { 
+            type: "directory", 
+            contents: {
+              "nmap": { type: "file", content: "Network Mapper - Advanced port scanning tool\nUsage: nmap -sS -sV -O <target>" },
+              "netcat": { type: "file", content: "Network utility - Swiss army knife for TCP/IP\nUsage: nc -zv <target> <port>" },
+              "masscan": { type: "file", content: "Mass port scanner - Fast parallel scanning\nUsage: masscan -p1-65535 <target> --rate=1000" }
+            }
+          },
+          "scripts": {
+            type: "directory",
+            contents: {
+              "vuln_scanner.sh": { 
+                type: "file", 
+                content: "#!/bin/bash\n# Basic vulnerability scanner\necho \"Scanning for common vulnerabilities...\"\nnmap --script vuln $1" 
+              },
+              "stealth_scan.py": { 
+                type: "file", 
+                content: "#!/usr/bin/env python3\n# Stealth scanning techniques\nprint(\"Advanced scanning methods for protected targets\")" 
+              }
+            }
+          },
+          "notes.txt": { 
+            type: "file", 
+            content: "ADVANCED SCANNING TECHNIQUES:\n\nPROTECTED TARGETS:\n- Some targets use stealth techniques\n- Filtered ports require advanced scanning\n- Use multiple scan types for better results\n\nSCANNING STRATEGY:\n1. Start with easy targets (gateway, printer)\n2. Move to medium difficulty (web server)\n3. Finally tackle hard targets (file server, backup)\n4. Look for critical vulnerabilities (SMB, RDP, Rsync)\n\nTIPS:\n- Failed scans cost points\n- Use hints strategically\n- Focus on required targets first" 
           }
-        }, 2000);
+        }
       }
-      return "vulnerable";
-    } else if (currentTargetData.openPorts.includes(portNum)) {
-      // Port is open but not vulnerable
-      setGameStatus(prev => ({
-        ...prev,
-        score: Math.max(0, prev.score - 10)
-      }));
-      addGameLog(`❌ Port ${portNum} is open but not vulnerable`, "error");
-      playSound(300, 0.2, 'square');
-      return "open";
-    } else {
-      // Port not even open
-      setGameStatus(prev => ({
-        ...prev,
-        score: Math.max(0, prev.score - 20)
-      }));
-      addGameLog(`❌ Port ${portNum} is not open`, "error");
-      playSound(200, 0.3, 'sawtooth');
-      return "closed";
-    }
-  }, [gameStatus, currentTarget, addGameLog, playSound, completeLevel, startNewScan, commonPorts]);
-
-  // ========== TERMINAL FUNCTIONS ==========
-
-  // FIXED: Better vulnerability identification
-  const identifyVulnerabilityInTerminal = useCallback((port) => {
-    if (!port) {
-      return ["Usage: vuln <port_number>", "Example: vuln 3389"];
-    }
-    
-    if (gameStatus.status !== "running") {
-      return ["Game not running"];
-    }
-    
-    if (!currentTarget) {
-      return ["No target selected. Use 'scan <ip>' first."];
-    }
-    
-    const portNum = parseInt(port);
-    if (isNaN(portNum)) {
-      return [`Invalid port number: ${port}`];
-    }
-    
-    const result = checkVulnerability(portNum);
-    
-    if (result === "vulnerable") {
-      return [
-        `✓ Vulnerability confirmed on port ${port}`,
-        `Vulnerabilities found: ${gameStatus.vulnerabilitiesFound + 1}/3`
-      ];
-    } else if (result === "open") {
-      return [`Port ${port} is open but not vulnerable`];
-    } else {
-      return [`Port ${port} is not open or doesn't exist`];
-    }
-  }, [gameStatus.status, gameStatus.vulnerabilitiesFound, currentTarget, checkVulnerability]);
-
-  // FIXED: Better terminal scan function
-  const startTerminalScan = useCallback((ip) => {
-    if (!ip) {
-      return ["Usage: scan <ip_address>", "Example: scan 192.168.1.45"];
-    }
-    
-    const target = targetSystems.find(t => t.ip === ip);
-    if (!target) {
-      return [
-        `Target not found: ${ip}`, 
-        "Available targets:", 
-        ...targetSystems.map(t => `  ${t.ip} (${t.hostname})`)
-      ];
-    }
-    
-    if (gameStatus.status !== "running") {
-      return ["Game not running. Start the game first."];
-    }
-    
-    setCurrentTarget(ip);
-    startNewScan(target);
-    
-    return [
-      `Starting scan on ${ip} (${target.hostname})...`,
-      `Target: ${target.description}`,
-      "Scanning ports..."
-    ];
-  }, [gameStatus.status, startNewScan]);
-
-  // FIXED: Enhanced terminal command processor
-  const processCommand = useCallback((command) => {
-    const args = command.trim().split(' ');
-    const cmd = args[0].toLowerCase();
-    
-    switch(cmd) {
-      case 'help':
-        return [
-          "Available commands:",
-          "  ls, dir         - List directory contents",
-          "  cd <dir>        - Change directory",
-          "  cat <file>      - Display file contents",
-          "  pwd             - Show current directory",
-          "  scan <ip>       - Start port scan on target",
-          "  nmap <options>  - Advanced port scanning",
-          "  vuln <port>     - Identify vulnerable port",
-          "  clear           - Clear terminal",
-          "  help            - Show this help"
-        ];
-      
-      case 'ls':
-      case 'dir':
-        return ["notes.md", "scan_results.txt", "tools/"];
-      
-      case 'cd':
-        if (!args[1] || args[1] === '~' || args[1] === '/home/hacker') {
-          setCurrentDir("/home/hacker");
-          return ["Changed to home directory"];
-        }
-        if (args[1] === '..') {
-          setCurrentDir("/home/hacker");
-          return ["Changed to home directory"];
-        }
-        if (args[1] === 'tools') {
-          setCurrentDir("/home/hacker/tools");
-          return ["Changed to tools directory"];
-        }
-        return [`Directory not found: ${args[1]}`];
-      
-      case 'cat':
-        if (args[1] === 'notes.md') {
-          return [
-            "# Target List",
-            "- 192.168.1.45 (Web Server)",
-            "- 10.0.2.67 (Database Server)", 
-            "- 172.16.8.123 (Dev Server)",
-            "",
-            "Common vulnerable ports:",
-            "• 21, 23 - Clear text protocols",
-            "• 80, 443 - Web services",
-            "• 3389, 5900 - Remote access",
-            "• 1433, 27017 - Databases"
-          ];
-        }
-        if (args[1] === 'scan_results.txt') {
-          return ["Previous scan: 192.168.1.1 - Ports: 22,80,443"];
-        }
-        if (args[1] === 'nmap_guide.txt') {
-          return [
-            "Common nmap commands:",
-            "nmap -sS target_ip    - Stealth SYN scan",
-            "nmap -p 1-1000 target_ip - Scan first 1000 ports",
-            "nmap -A target_ip     - Aggressive scan"
-          ];
-        }
-        return [`File not found: ${args[1]}`];
-      
-      case 'pwd':
-        return [currentDir];
-      
-      case 'scan':
-        return startTerminalScan(args[1]);
-      
-      case 'nmap':
-        if (!currentTarget) {
-          return ["No target selected. Use: scan <ip> first"];
-        }
-        return [`nmap ${args.slice(1).join(' ')} ${currentTarget}`, "Scanning..."];
-      
-      case 'vuln':
-        return identifyVulnerabilityInTerminal(args[1]);
-      
-      case 'clear':
-        setTerminalHistory([{ id: Date.now(), type: "output", content: "Terminal cleared" }]);
-        return [];
-      
-      case '':
-        return [];
-      
-      default:
-        return [`Command not found: ${cmd}. Type 'help' for available commands.`];
-    }
-  }, [currentTarget, currentDir, startTerminalScan, identifyVulnerabilityInTerminal]);
-
-  // FIXED: Enhanced terminal submit handler
-  const handleTerminalSubmit = useCallback((e) => {
-    e.preventDefault();
-    const input = terminalInput.trim();
-    if (!input) return;
-    
-    const newHistory = [...terminalHistoryRef.current];
-    const timestamp = Date.now();
-    
-    // Add user input to history
-    newHistory.push({ 
-      id: timestamp, 
-      type: "input", 
-      content: `hacker@hackingzone:~${currentDir}$ ${input}` 
-    });
-    
-    // Process command and add output
-    const output = processCommand(input);
-    output.forEach((line, index) => {
-      newHistory.push({ 
-        id: timestamp + index + 1, 
-        type: "output", 
-        content: line 
-      });
-    });
-    
-    // Update both ref and state
-    terminalHistoryRef.current = newHistory;
-    setTerminalHistory(newHistory);
-    setTerminalInput("");
-  }, [terminalInput, currentDir, processCommand]);
-
-  // ========== GAME CONTROL FUNCTIONS ==========
-
-  // FIXED: Enhanced start game with proper initialization
-  const startGame = useCallback(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-    
-    initAudio();
-    
-    setGameStatus({
-      status: "running",
-      timeElapsed: 0,
-      score: 0,
-      targetsScanned: 0,
-      vulnerabilitiesFound: 0,
-      level: 5,
-      isPaused: false,
-      lives: 3
-    });
-    
-    setActiveDefenses([]);
-    setGameLog([]);
-    setLevelPassword("");
-    setShowTutorial(false);
-    setCurrentTarget("");
-    setOpenPorts([]);
-    setScanProgress(0);
-    setScanning(false);
-    
-    // Initialize terminal with unique IDs
-    const initialHistory = [
-      { id: 1, type: "output", content: "Welcome to HackingZone Terminal v2.1" },
-      { id: 2, type: "output", content: "Game started! Type 'help' for commands" },
-      { id: 3, type: "output", content: "Use: scan 192.168.1.45 to begin" },
-      { id: 4, type: "output", content: "" }
-    ];
-    
-    terminalHistoryRef.current = initialHistory;
-    setTerminalHistory(initialHistory);
-    
-    addGameLog("🚀 Game started! Use terminal commands to scan targets", "info");
-    playSound(523, 0.2);
-  }, [isAuthenticated, navigate, initAudio, addGameLog, playSound]);
-
-  const pauseGame = useCallback(() => {
-    setGameStatus(prev => ({ ...prev, isPaused: !prev.isPaused }));
-    setScanning(prev => !prev);
-  }, []);
-
-  // FIXED: Enhanced reset with proper cleanup
-  const resetGame = useCallback(() => {
-    // Clear intervals
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-    }
-    if (defenseIntervalRef.current) {
-      clearInterval(defenseIntervalRef.current);
-    }
-    
-    setGameStatus({
-      status: "idle",
-      timeElapsed: 0,
-      score: 0,
-      targetsScanned: 0,
-      vulnerabilitiesFound: 0,
-      level: 5,
-      isPaused: false,
-      lives: 3
-    });
-    setActiveDefenses([]);
-    setGameLog([]);
-    setLevelPassword("");
-    setCurrentTarget("");
-    setOpenPorts([]);
-    setScanProgress(0);
-    setScanning(false);
-    
-    // Reset terminal
-    const resetHistory = [
-      { id: 1, type: "output", content: "Welcome to HackingZone Terminal v2.1" },
-      { id: 2, type: "output", content: "Type 'help' for available commands" },
-      { id: 3, type: "output", content: "" }
-    ];
-    
-    terminalHistoryRef.current = resetHistory;
-    setTerminalHistory(resetHistory);
-  }, []);
-
-  // ========== PASSWORD FUNCTIONS ==========
-
-  const getStoredLevelPassword = useCallback(() => {
-    const sources = [
-      gameState.levelPasswords[5],
-      JSON.parse(localStorage.getItem('hacking_zone_level_passwords') || '{}')[5],
-      localStorage.getItem('level5_password')
-    ];
-
-    return sources.find(p => p && p.startsWith('HZ-L5-'));
-  }, [gameState.levelPasswords]);
-
-  const normalizePassword = useCallback((password) => {
-    return password.trim().toUpperCase();
-  }, []);
-
-  const checkLevelPassword = useCallback(() => {
-    initAudio();
-    
-    const inputPassword = normalizePassword(passwordInput);
-    const savedPassword = getStoredLevelPassword();
-    
-    if (!inputPassword) {
-      setPasswordError("Please enter the Level 5 password");
-      return;
-    }
-    
-    if (!savedPassword) {
-      setPasswordError("No Level 5 password found. Please complete Encrypted Zone level first.");
-      return;
-    }
-    
-    const normalizedSavedPassword = normalizePassword(savedPassword);
-    
-    if (inputPassword === normalizedSavedPassword) {
-      setGameStatus(prev => ({ ...prev, status: "idle" }));
-      setPasswordError("");
-      setShowTutorial(true);
-      gameActions.unlockLevel(5);
-      playSound(800, 0.2);
-    } else {
-      setPasswordError(`Invalid Level 5 password. The password should start with "HZ-L5-".`);
-      playSound(300, 0.3, 'square');
-    }
-  }, [passwordInput, getStoredLevelPassword, normalizePassword, initAudio, playSound, gameActions]);
-
-  const skipPassword = useCallback(() => {
-    initAudio();
-    setGameStatus(prev => ({ ...prev, status: "idle" }));
-    setShowTutorial(true);
-    gameActions.unlockLevel(5);
-  }, [initAudio, gameActions]);
-
-  const copyPasswordToClipboard = useCallback(() => {
-    navigator.clipboard.writeText(levelPassword).then(() => {
-      setPasswordCopied(true);
-      setTimeout(() => setPasswordCopied(false), 2000);
-    });
-  }, [levelPassword]);
-
-  // ========== EFFECTS ==========
-
-  // Game timer
-  useEffect(() => {
-    let interval;
-    if (gameStatus.status === "running" && !gameStatus.isPaused) {
-      interval = setInterval(() => {
-        setGameStatus(prev => ({
-          ...prev,
-          timeElapsed: prev.timeElapsed + 1
-        }));
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
     };
-  }, [gameStatus.status, gameStatus.isPaused]);
-
-  // FIXED: Scroll to bottom of terminal
-  useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [terminalHistory]);
-
-  // FIXED: Update ref when terminalHistory changes
-  useEffect(() => {
-    terminalHistoryRef.current = terminalHistory;
-  }, [terminalHistory]);
+    setFileSystem(initFileSystem);
+  }, []);
 
   // Check level status
   useEffect(() => {
@@ -765,407 +248,794 @@ export default function PortScanner() {
         gameActions.unlockLevel(5);
       }
     }
-  }, [gameState.completedLevels, gameState.levelUnlocks, gameState.isLoading, gameActions]);
+  }, [gameState.completedLevels, gameState.levelUnlocks, gameState.isLoading]);
 
-  // ========== UI COMPONENTS ==========
+  // Handle scroll behavior
+  useEffect(() => {
+    const terminal = terminalContainerRef.current;
+    if (!terminal) return;
 
-  const getPortColor = (port) => {
-    const currentTargetData = targetSystems.find(t => t.ip === currentTarget);
-    if (currentTargetData?.vulnerabilities.includes(port)) {
-      return "bg-red-500/20 border-red-500/40 shadow-lg shadow-red-500/20";
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = terminal;
+      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 10;
+      setUserScrolled(!isAtBottom);
+    };
+
+    terminal.addEventListener('scroll', handleScroll);
+    return () => terminal.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Auto-scroll only if user hasn't manually scrolled
+  useEffect(() => {
+    if (!userScrolled || gameStatus.status === "completed" || terminalHistory.length < 10) {
+      terminalEndRef.current?.scrollIntoView({ 
+        behavior: userScrolled ? "auto" : "smooth",
+        block: "nearest"
+      });
     }
-    return "bg-green-500/10 border-green-500/30";
+    
+    inputRef.current?.focus();
+  }, [terminalHistory, activeScan, userScrolled, gameStatus.status]);
+
+  // Game timer
+  useEffect(() => {
+    let interval;
+    if (gameStatus.status === "running" && !gameStatus.isPaused) {
+      interval = setInterval(() => {
+        setGameStatus(prev => ({
+          ...prev,
+          timeElapsed: prev.timeElapsed + 1
+        }));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [gameStatus.status, gameStatus.isPaused]);
+
+  // Handle keyboard navigation for command history
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (commandHistory.length > 0) {
+          const newIndex = historyIndex < commandHistory.length - 1 ? historyIndex + 1 : 0;
+          setHistoryIndex(newIndex);
+          setTerminalInput(commandHistory[commandHistory.length - 1 - newIndex] || '');
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          const newIndex = historyIndex - 1;
+          setHistoryIndex(newIndex);
+          setTerminalInput(commandHistory[commandHistory.length - 1 - newIndex] || '');
+        } else {
+          setHistoryIndex(-1);
+          setTerminalInput('');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [commandHistory, historyIndex]);
+
+  // Password management
+  const getStoredLevelPassword = () => {
+    const sources = [
+      gameState.levelPasswords[5],
+      JSON.parse(localStorage.getItem('hacking_zone_level_passwords') || '{}')[5],
+      localStorage.getItem('level5_password')
+    ];
+    return sources.find(p => p && p.startsWith('HZ-L5-'));
   };
 
-  // FIXED: Enhanced terminal design component with proper keys
-  const TerminalWithDesign = () => (
-    <div className="glass card-cyber rounded-2xl border border-green-500/30 h-96 overflow-hidden bg-gray-900/80 backdrop-blur-sm relative">
-      {/* Animated Border */}
-      <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-green-500/20 via-cyan-500/20 to-purple-500/20 rounded-2xl animate-pulse" />
+  const checkLevelPassword = () => {
+    const inputPassword = terminalInput.trim().toUpperCase();
+    const savedPassword = getStoredLevelPassword();
+    
+    if (!inputPassword) {
+      addToTerminal("Error: Please enter the Level 5 password", "error");
+      return;
+    }
+    
+    if (!savedPassword) {
+      addToTerminal("Error: No Level 5 password found. Please complete Encrypted Zone level first.", "error");
+      return;
+    }
+    
+    const normalizedSavedPassword = savedPassword.toUpperCase();
+    
+    if (inputPassword === normalizedSavedPassword) {
+      setGameStatus(prev => ({ ...prev, status: "idle" }));
+      setShowTutorial(true);
+      gameActions.unlockLevel(5);
+      addToTerminal("Access granted! Level 5 unlocked.", "success");
+      addToTerminal("Type 'start' to begin the Port Scanner challenge", "info");
+      addToTerminal("scanner@hacking-zone:~$ ", "prompt");
+    } else {
+      addToTerminal(`Error: Invalid Level 5 password. The password should start with "HZ-L5-".`, "error");
+      addToTerminal("scanner@hacking-zone:~$ ", "prompt");
+    }
+    setTerminalInput("");
+  };
+
+  // Enhanced command processor with difficulty
+  const processCommand = (command) => {
+    const trimmedCommand = command.trim();
+    if (!trimmedCommand) return;
+
+    setCommandHistory(prev => [...prev, trimmedCommand]);
+    setHistoryIndex(-1);
+
+    const args = trimmedCommand.split(' ').filter(arg => arg);
+    const cmd = args[0].toLowerCase();
+    
+    addToTerminal(`scanner@hacking-zone:${currentDirectory}$ ${trimmedCommand}`, "command");
+
+    switch (cmd) {
+      case 'help':
+        addToTerminal("Available commands:", "info");
+        addToTerminal("  help, clear, ls, cd, pwd, cat, whoami, uname", "info");
+        addToTerminal("  portscan <ip>    - Scan target IP address", "info");
+        addToTerminal("  view scan        - View scan results", "info");
+        addToTerminal("  targets          - Show network targets", "info");
+        addToTerminal("  start            - Start the challenge", "info");
+        addToTerminal("  ifconfig         - Show network configuration", "info");
+        addToTerminal("  ping <host>      - Ping network host", "info");
+        addToTerminal("  history          - Show command history", "info");
+        addToTerminal("  hint             - Get a strategic hint", "info");
+        break;
       
-      {/* Terminal Header */}
-      <div className="bg-gradient-to-r from-green-900/40 to-green-800/20 border-b border-green-500/30 p-3 relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 bg-red-500 rounded-full hover:bg-red-400 cursor-pointer"></div>
-              <div className="w-3 h-3 bg-yellow-500 rounded-full hover:bg-yellow-400 cursor-pointer"></div>
-              <div className="w-3 h-3 bg-green-500 rounded-full hover:bg-green-400 cursor-pointer"></div>
-            </div>
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <Terminal className="w-4 h-4" />
-              HackingZone Terminal
-              <span className="text-green-400 text-xs bg-green-500/20 px-2 py-1 rounded-full">v2.1</span>
-            </h3>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400 text-xs">
-            <Monitor className="w-3 h-3" />
-            <span>hacker@root</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Terminal Content */}
-      <div className="p-4 h-80 overflow-y-auto bg-black/70 font-mono text-sm terminal-scrollbar relative z-10">
-        <div className="space-y-1">
-          {terminalHistory.map((item) => (
-            <div
-              key={`terminal-${item.id}`}
-              className={`${
-                item.type === "input" 
-                  ? "text-cyan-300 bg-cyan-500/10 border-l-2 border-cyan-500 pl-2 py-1" 
-                  : "text-green-300"
-              } whitespace-pre-wrap leading-relaxed`}
-            >
-              {item.type === "input" ? (
-                <>
-                  <span className="text-green-400">hacker@hackingzone</span>
-                  <span className="text-purple-400">:~{currentDir}$</span>
-                  <span className="text-cyan-300 ml-1">{item.content.replace(`hacker@hackingzone:~${currentDir}$ `, '')}</span>
-                </>
-              ) : (
-                item.content
-              )}
-            </div>
-          ))}
-        </div>
-        <div ref={terminalEndRef} />
-      </div>
-
-      {/* Terminal Input */}
-      <form onSubmit={handleTerminalSubmit} className="border-t border-gray-700 bg-black/50 relative z-10">
-        <div className="flex items-center p-3">
-          <span className="text-green-400 font-mono text-sm">
-            <span className="text-green-300">hacker@hackingzone</span>
-            <span className="text-purple-400">:~{currentDir}$</span>
-          </span>
-          <input
-            type="text"
-            value={terminalInput}
-            onChange={(e) => setTerminalInput(e.target.value)}
-            className="flex-1 bg-transparent border-none outline-none text-cyan-300 font-mono ml-2 placeholder-cyan-300/50"
-            placeholder="Type command and press Enter..."
-            autoFocus
-          />
-          <Keyboard className="w-4 h-4 text-gray-500 mr-2" />
-        </div>
-      </form>
-    </div>
-  );
-
-  // FIXED: Command Reference Component with proper keys
-  const CommandReference = () => (
-    <div className="glass card-cyber p-6 rounded-2xl border border-blue-500/30 bg-gray-900/60 backdrop-blur-sm relative">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-cyan-500/5 rounded-2xl" />
+      case 'hint':
+        handleHintCommand();
+        break;
       
-      <div className="relative z-10">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <Command className="w-5 h-5 text-blue-400" />
-          Command Reference
-          <span className="text-blue-400 text-sm bg-blue-500/20 px-2 py-1 rounded-full ml-2">Click to Use</span>
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {commandCategories.map((category, categoryIndex) => (
-            <motion.div
-              key={`category-${categoryIndex}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: categoryIndex * 0.1 }}
-              className={`bg-gradient-to-br from-${category.color}-500/10 to-${category.color}-600/5 rounded-xl border border-${category.color}-500/20 p-4 hover:border-${category.color}-400/40 transition-all duration-300 hover:scale-105 cursor-pointer group backdrop-blur-sm`}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`text-${category.color}-400`}>
-                  {category.icon}
-                </div>
-                <h4 className="text-white font-semibold text-sm">{category.title}</h4>
-              </div>
-              
-              <div className="space-y-2">
-                {category.commands.map((cmd, cmdIndex) => (
-                  <motion.div
-                    key={`cmd-${categoryIndex}-${cmdIndex}`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setTerminalInput(cmd.command);
-                      // Auto-submit for quick win commands
-                      if (category.title === "🎯 Quick Win") {
-                        setTimeout(() => {
-                          const event = new Event('submit', { bubbles: true });
-                          document.querySelector('form')?.dispatchEvent(event);
-                        }, 100);
-                      }
-                    }}
-                    className={`p-2 rounded-lg bg-${category.color}-500/5 border border-${category.color}-500/10 hover:bg-${category.color}-500/10 hover:border-${category.color}-400/30 transition-all duration-200 group cursor-pointer`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <MousePointer className="w-3 h-3 text-gray-400 mt-1 flex-shrink-0 group-hover:text-white transition-colors" />
-                      <div className="flex-1">
-                        <code className={`text-${category.color}-300 font-mono text-xs block group-hover:text-${category.color}-200 transition-colors`}>
-                          {cmd.command}
-                        </code>
-                        <p className="text-gray-400 text-xs mt-1 group-hover:text-gray-300 transition-colors">
-                          {cmd.description}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Quick Tips */}
-        <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
-          <div className="flex items-center gap-2 text-purple-300 text-sm">
-            <Zap className="w-4 h-4" />
-            <span className="font-semibold">Pro Tip:</span>
-            <span>Click any command to auto-fill the terminal!</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // FIXED: Enhanced visual scan results with proper keys
-  const VisualScanResults = () => (
-    <div className="glass card-cyber p-6 rounded-2xl border border-orange-500/30 bg-gray-900/60 backdrop-blur-sm relative">
-      {/* Animated Border */}
-      <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-orange-500/10 via-yellow-500/10 to-red-500/10 rounded-2xl animate-pulse" />
+      case 'clear':
+        setTerminalHistory([]);
+        setUserScrolled(false);
+        break;
       
-      <div className="relative z-10">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <Radar className="w-5 h-5 text-orange-400" />
-          Network Scanner
-          <span className="text-orange-400 text-sm bg-orange-500/20 px-2 py-1 rounded-full ml-2">Live</span>
-        </h3>
-        
-        {/* Target Info */}
-        {currentTarget && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-4 mb-4 border border-blue-500/20"
-          >
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <Globe className="w-4 h-4 text-blue-400" />
-              Active Target
-            </h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-400">IP Address:</span>
-                <span className="text-green-400 ml-2 font-mono">{currentTarget}</span>
-              </div>
-              <div>
-                <span className="text-gray-400">Hostname:</span>
-                <span className="text-cyan-400 ml-2 font-mono">
-                  {targetSystems.find(t => t.ip === currentTarget)?.hostname}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-400">Operating System:</span>
-                <span className="text-yellow-400 ml-2">
-                  {targetSystems.find(t => t.ip === currentTarget)?.os}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-400">Scan Status:</span>
-                <span className={`ml-2 ${scanning ? 'text-yellow-400' : 'text-green-400'} font-semibold`}>
-                  {scanning ? '🟡 SCANNING...' : '🟢 READY'}
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        )}
+      case 'ls':
+        handleLsCommand(args);
+        break;
+      
+      case 'cd':
+        handleCdCommand(args);
+        break;
+      
+      case 'pwd':
+        addToTerminal(currentDirectory, "output");
+        break;
+      
+      case 'cat':
+        handleCatCommand(args);
+        break;
+      
+      case 'whoami':
+        addToTerminal("scanner", "output");
+        break;
 
-        {/* Scan Progress */}
-        {scanning && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-4 mb-4 border border-purple-500/20"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-white font-semibold flex items-center gap-2">
-                <Scan className="w-4 h-4 text-blue-400" />
-                Port Discovery in Progress
-              </span>
-              <span className="text-blue-400 font-mono bg-blue-500/20 px-2 py-1 rounded">{scanProgress}%</span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${scanProgress}%` }}
-                className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full transition-all duration-300 shadow-lg shadow-blue-500/20"
-              />
-            </div>
-            <div className="text-gray-400 text-xs flex justify-between">
-              <span>Initializing...</span>
-              <span>Port Discovery</span>
-              <span>Analysis</span>
-              <span>Complete</span>
-            </div>
-          </motion.div>
-        )}
+      case 'uname':
+        addToTerminal("Linux hacking-zone 5.15.0-kali3-amd64 #1 SMP Debian 5.15.13-2kali1 (2022-02-08) x86_64 GNU/Linux", "output");
+        break;
 
-        {/* Open Ports Display */}
-        {openPorts.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <Network className="w-4 h-4 text-green-400" />
-              Discovered Ports
-              <span className="text-green-400 text-sm bg-green-500/20 px-2 py-1 rounded-full">
-                {openPorts.length} Found
-              </span>
-            </h4>
-            <div className="grid grid-cols-3 gap-3">
-              {openPorts.map(port => {
-                const isVulnerable = targetSystems.find(t => t.ip === currentTarget)?.vulnerabilities.includes(port);
-                return (
-                  <motion.div
-                    key={`port-${port}`}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    whileHover={{ scale: 1.05 }}
-                    className={`p-3 rounded-xl border-2 text-center transition-all duration-300 ${
-                      isVulnerable 
-                        ? 'bg-red-500/20 border-red-500/40 shadow-lg shadow-red-500/20 hover:border-red-400' 
-                        : 'bg-green-500/10 border-green-500/30 hover:border-green-400'
-                    }`}
-                  >
-                    <div className="text-white font-bold text-lg font-mono">{port}</div>
-                    <div className="text-gray-300 text-xs mt-1">{commonPorts[port]}</div>
-                    {isVulnerable && (
-                      <div className="text-red-400 text-xs mt-1 font-semibold">⚠️ VULNERABLE</div>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
+      case 'ifconfig':
+        addToTerminal("eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500", "output");
+        addToTerminal("        inet 192.168.1.100  netmask 255.255.255.0  broadcast 192.168.1.255", "output");
+        break;
 
-        {/* Quick Actions */}
-        {!currentTarget && (
-          <div className="text-center py-8">
-            <Globe className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-            <p className="text-gray-400">No target selected</p>
-            <p className="text-gray-500 text-sm mt-1">Use the terminal or command reference to start scanning</p>
-          </div>
-        )}
+      case 'ping':
+        if (args.length < 2) {
+          addToTerminal("Usage: ping <host>", "error");
+        } else {
+          handlePingCommand(args[1]);
+        }
+        break;
+
+      case 'history':
+        commandHistory.forEach((cmd, index) => {
+          addToTerminal(` ${index + 1}  ${cmd}`, "output");
+        });
+        break;
+      
+      case 'portscan':
+        handlePortScanCommand(args);
+        break;
+      
+      case 'view':
+        handleViewCommand(args);
+        break;
+      
+      case 'start':
+        if (gameStatus.status === "idle") {
+          startGame();
+        } else {
+          addToTerminal("Game already running. Use 'view scan' to see progress.", "info");
+        }
+        break;
+      
+      case 'targets':
+        handleTargetsCommand();
+        break;
+      
+      default:
+        addToTerminal(`bash: ${cmd}: command not found`, "error");
+    }
+
+    addToTerminal("scanner@hacking-zone:~$ ", "prompt");
+  };
+
+  const handleHintCommand = () => {
+    setHintsUsed(prev => prev + 1);
+    setGameStatus(prev => ({ ...prev, score: Math.max(0, prev.score - 10) }));
+    
+    const unscannedTargets = networkTargets.filter(target => 
+      !scanResults.find(r => r.ip === target.ip)
+    );
+    
+    if (unscannedTargets.length === 0) {
+      addToTerminal("All targets scanned! Focus on finding critical vulnerabilities.", "info");
+      return;
+    }
+
+    const easyTargets = unscannedTargets.filter(t => t.difficulty === "easy");
+    const mediumTargets = unscannedTargets.filter(t => t.difficulty === "medium");
+    
+    if (easyTargets.length > 0) {
+      const target = easyTargets[0];
+      addToTerminal(`Hint: Start with ${target.ip} (${target.hostname}) - ${target.description}`, "info");
+    } else if (mediumTargets.length > 0) {
+      const target = mediumTargets[0];
+      addToTerminal(`Hint: Try ${target.ip} (${target.hostname}) - Look for database services`, "info");
+    } else {
+      const target = unscannedTargets[0];
+      addToTerminal(`Hint: Advanced target ${target.ip} - Use multiple scan attempts`, "info");
+    }
+  };
+
+  const handleLsCommand = (args) => {
+    const path = args[1] ? resolvePath(args[1]) : currentDirectory;
+    const dir = getDirectory(path);
+    
+    if (!dir || dir.type !== "directory") {
+      addToTerminal(`ls: cannot access '${args[1] || path}': No such file or directory`, "error");
+      return;
+    }
+    
+    const contents = Object.keys(dir.contents);
+    if (contents.length === 0) {
+      addToTerminal("", "output");
+    } else {
+      addToTerminal(`total ${contents.length * 4}`, "output");
+      contents.forEach(item => {
+        const itemData = dir.contents[item];
+        const isDir = itemData.type === "directory";
+        const perm = isDir ? "drwxr-xr-x" : "-rw-r--r--";
+        const size = isDir ? "4096" : Math.floor(Math.random() * 1000) + 100;
+        const date = "Jan 15 10:30";
+        addToTerminal(`${perm} 1 scanner scanner ${size} ${date} ${item}`, "output");
+      });
+    }
+  };
+
+  const handleCdCommand = (args) => {
+    if (args.length < 2) {
+      setCurrentDirectory("/home/scanner");
+      return;
+    }
+    
+    const targetPath = resolvePath(args[1]);
+    const dir = getDirectory(targetPath);
+    
+    if (!dir || dir.type !== "directory") {
+      addToTerminal(`bash: cd: ${args[1]}: No such file or directory`, "error");
+      return;
+    }
+    
+    setCurrentDirectory(targetPath);
+  };
+
+  const handleCatCommand = (args) => {
+    if (args.length < 2) {
+      addToTerminal("cat: missing file operand", "error");
+      return;
+    }
+    
+    const filePath = resolvePath(args[1]);
+    const file = getFile(filePath);
+    
+    if (!file || file.type !== "file") {
+      addToTerminal(`cat: ${args[1]}: No such file or directory`, "error");
+      return;
+    }
+    
+    addToTerminal(file.content, "output");
+  };
+
+  const handlePingCommand = (host) => {
+    const target = networkTargets.find(t => t.ip === host || t.hostname === host);
+    if (!target) {
+      addToTerminal(`ping: ${host}: Name or service not known`, "error");
+      return;
+    }
+    
+    addToTerminal(`PING ${host} (${target.ip}) 56(84) bytes of data.`, "output");
+    addToTerminal("64 bytes from 192.168.1.1: icmp_seq=1 ttl=64 time=1.23 ms", "output");
+    addToTerminal("64 bytes from 192.168.1.1: icmp_seq=2 ttl=64 time=1.45 ms", "output");
+    addToTerminal("", "output");
+    addToTerminal("--- ping statistics ---", "output");
+    addToTerminal("2 packets transmitted, 2 received, 0% packet loss, time 1001ms", "output");
+  };
+
+  const handleTargetsCommand = () => {
+    addToTerminal("Network Targets (Difficulty: 🟢 Easy 🟡 Medium 🔴 Hard):", "info");
+    networkTargets.forEach(target => {
+      const difficultyIcon = 
+        target.difficulty === "easy" ? "🟢" :
+        target.difficulty === "medium" ? "🟡" : "🔴";
+      const scanned = scanResults.find(r => r.ip === target.ip);
+      const status = scanned ? "✅ Scanned" : "❌ Not scanned";
+      const required = target.required ? " [REQUIRED]" : "";
+      addToTerminal(`  ${difficultyIcon} ${target.ip} - ${target.hostname}${required} - ${status}`, "output");
+    });
+    addToTerminal("Use 'portscan <ip>' to scan a target", "info");
+  };
+
+  const handlePortScanCommand = (args) => {
+    if (args.length < 2) {
+      addToTerminal("Usage: portscan <ip_address>", "error");
+      addToTerminal("Example: portscan 192.168.1.1", "info");
+      return;
+    }
+    
+    const targetIP = args[1];
+    const target = networkTargets.find(t => t.ip === targetIP);
+    
+    if (!target) {
+      addToTerminal(`Target ${targetIP} not found in network`, "error");
+      addToTerminal("Use 'targets' to see available targets", "info");
+      return;
+    }
+    
+    if (gameStatus.status !== "running") {
+      addToTerminal("Start the game first with 'start' command", "error");
+      return;
+    }
+
+    // Check if already scanned
+    if (scanResults.find(r => r.ip === targetIP)) {
+      addToTerminal(`Target ${targetIP} already scanned. Use 'view scan' to see results.`, "info");
+      return;
+    }
+    
+    setScanAttempts(prev => prev + 1);
+    
+    // Start scanning animation
+    setActiveScan({ ip: targetIP, progress: 0 });
+    addToTerminal(`Starting Nmap 7.92 scan against ${targetIP}...`, "info");
+    addToTerminal(`Scanning 1000 most common ports on ${targetIP}`, "info");
+    
+    // Simulate scanning with potential failure based on difficulty
+    const successChance = 
+      target.difficulty === "easy" ? 0.9 :
+      target.difficulty === "medium" ? 0.7 : 0.5;
+    
+    const willSucceed = Math.random() < successChance;
+    
+    const scanPhases = [
+      { delay: 500, message: "Initiating ARP Ping Scan at 10:23" },
+      { delay: 1000, message: "Scanning 1000 ports..." },
+      { delay: 1500, message: "Discovering open ports..." },
+      { delay: 2000, message: "Service version detection..." },
+      { delay: 2500, message: "OS detection..." }
+    ];
+
+    let phaseIndex = 0;
+    const scanInterval = setInterval(() => {
+      if (phaseIndex < scanPhases.length) {
+        addToTerminal(scanPhases[phaseIndex].message, "scan");
+        phaseIndex++;
+      }
+      
+      const progress = Math.min(100, (phaseIndex / scanPhases.length) * 100);
+      setActiveScan(prev => prev ? { ...prev, progress } : null);
+      
+      if (progress >= 100) {
+        clearInterval(scanInterval);
+        setTimeout(() => {
+          if (willSucceed) {
+            completeScan(target);
+          } else {
+            handleScanFailure(target);
+          }
+        }, 1000);
+      }
+    }, 500);
+  };
+
+  const handleScanFailure = (target) => {
+    setActiveScan(null);
+    setFailedScans(prev => prev + 1);
+    setGameStatus(prev => ({ ...prev, score: Math.max(0, prev.score - 15) }));
+    
+    addToTerminal(`Scan failed: ${target.ip} may be protected or using stealth techniques`, "error");
+    addToTerminal("Try scanning again or use a different approach", "info");
+    
+    if (failedScans >= 2) {
+      addToTerminal("Warning: Multiple failed scans detected. Consider using 'hint' command.", "warning");
+    }
+  };
+
+  const handleViewCommand = (args) => {
+    if (args.length < 2) {
+      addToTerminal("Usage: view <scan|results|targets>", "error");
+      return;
+    }
+    
+    switch (args[1]) {
+      case 'scan':
+      case 'results':
+        if (scanResults.length === 0) {
+          addToTerminal("No scan results yet. Use 'portscan <ip>' first.", "info");
+        } else {
+          scanResults.forEach(result => {
+            addToTerminal(`\nScan Report for ${result.ip} (${result.hostname})`, "info");
+            addToTerminal(`Host is up (0.0012s latency).`, "output");
+            addToTerminal(`Not shown: 996 filtered ports`, "output");
+            addToTerminal(`PORT     STATE SERVICE    VERSION`, "output");
+            
+            result.ports.forEach(port => {
+              const state = port.status === "open" ? "open" : "filtered";
+              const securityIcon = 
+                port.security === "critical" ? "🔴" :
+                port.security === "high" ? "🟡" :
+                port.security === "medium" ? "🟢" : "⚪";
+              addToTerminal(`${port.port}/tcp  ${state.padEnd(6)} ${port.service.padEnd(11)} ${port.version} ${securityIcon}`, "output");
+            });
+            
+            addToTerminal(`OS: ${result.os}`, "output");
+            addToTerminal(`Service detection performed.`, "output");
+            addToTerminal(`${result.ports.filter(p => p.status === "open").length} ports open, ${result.vulnerabilities.length} potential vulnerabilities found.`, "output");
+          });
+        }
+        break;
+      
+      default:
+        addToTerminal(`Unknown view option: ${args[1]}`, "error");
+    }
+  };
+
+  const completeScan = (target) => {
+    setActiveScan(null);
+    setScanResults(prev => [...prev.filter(r => r.ip !== target.ip), target]);
+    
+    // Calculate score based on difficulty and findings
+    const openPorts = target.ports.filter(p => p.status === "open").length;
+    const criticalPorts = target.ports.filter(p => p.security === "critical" && p.status === "open").length;
+    const highRiskPorts = target.ports.filter(p => p.security === "high" && p.status === "open").length;
+    
+    const baseScore = openPorts * 5;
+    const riskBonus = (criticalPorts * 30) + (highRiskPorts * 15);
+    const difficultyMultiplier = 
+      target.difficulty === "easy" ? 1 :
+      target.difficulty === "medium" ? 1.5 : 2;
+    
+    const scanScore = Math.floor((baseScore + riskBonus) * difficultyMultiplier);
+    
+    setGameStatus(prev => ({
+      ...prev,
+      targetsFound: prev.targetsFound + (target.required ? 1 : 0),
+      vulnerabilitiesFound: prev.vulnerabilitiesFound + criticalPorts + highRiskPorts,
+      score: prev.score + scanScore
+    }));
+    
+    addToTerminal(`Nmap scan report for ${target.ip}`, "success");
+    addToTerminal(`Host is up (0.0012s latency).`, "output");
+    addToTerminal(`Found ${openPorts} open ports (${criticalPorts} critical, ${highRiskPorts} high risk)`, "info");
+    addToTerminal(`+${scanScore} points earned`, "success");
+    
+    // Check win condition
+    const requiredTargetsScanned = networkTargets.filter(t => t.required)
+      .every(t => scanResults.find(r => r.ip === t.ip));
+    const hasCriticalVulnerabilities = scanResults.some(r => 
+      r.ports.some(p => p.security === "critical" && p.status === "open")
+    );
+    const totalVulnerabilities = scanResults.reduce((sum, r) => 
+      sum + r.ports.filter(p => (p.security === "critical" || p.security === "high") && p.status === "open").length, 0
+    );
+    
+    if (requiredTargetsScanned && hasCriticalVulnerabilities && totalVulnerabilities >= 4) {
+      setTimeout(completeLevel, 1500);
+    } else {
+      const remainingRequired = networkTargets.filter(t => t.required && !scanResults.find(r => r.ip === t.ip)).length;
+      const neededVulnerabilities = 4 - totalVulnerabilities;
+      addToTerminal(`Progress: ${remainingRequired} required targets, ${neededVulnerabilities} more vulnerabilities needed`, "info");
+    }
+  };
+
+  const getDirectory = (path) => {
+    const parts = path.split('/').filter(p => p);
+    let current = fileSystem['/'];
+    
+    for (const part of parts) {
+      if (current?.contents?.[part]?.type === "directory") {
+        current = current.contents[part];
+      } else {
+        return null;
+      }
+    }
+    return current;
+  };
+
+  const getFile = (path) => {
+    const parts = path.split('/').filter(p => p);
+    const filename = parts.pop();
+    const dirPath = '/' + parts.join('/');
+    const dir = getDirectory(dirPath || '/');
+    
+    return dir?.contents?.[filename];
+  };
+
+  const resolvePath = (path) => {
+    if (path.startsWith('/')) {
+      return path;
+    }
+    
+    const currentParts = currentDirectory.split('/').filter(p => p);
+    const pathParts = path.split('/').filter(p => p);
+    
+    for (const part of pathParts) {
+      if (part === '..') {
+        currentParts.pop();
+      } else if (part !== '.') {
+        currentParts.push(part);
+      }
+    }
+    
+    return '/' + currentParts.join('/');
+  };
+
+  const addToTerminal = (message, type = "output") => {
+    setTerminalHistory(prev => [...prev, { 
+      id: Date.now() + Math.random(), 
+      message, 
+      type,
+      timestamp: new Date().toLocaleTimeString() 
+    }]);
+  };
+
+  const handleTerminalSubmit = (e) => {
+    e.preventDefault();
+    const trimmedInput = terminalInput.trim();
+    if (!trimmedInput) return;
+
+    // When user submits a command, assume they want to see the output
+    setUserScrolled(false);
+
+    if (gameStatus.status === "locked") {
+      checkLevelPassword();
+    } else {
+      processCommand(trimmedInput);
+    }
+    
+    setTerminalInput("");
+    setHistoryIndex(-1);
+  };
+
+  const startGame = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    
+    setGameStatus({
+      status: "running",
+      timeElapsed: 0,
+      score: 100,
+      targetsFound: 0,
+      vulnerabilitiesFound: 0,
+      level: 5,
+      isPaused: false,
+      phase: "exploration"
+    });
+    
+    setScanResults([]);
+    setActiveScan(null);
+    setCommandHistory([]);
+    setScanAttempts(0);
+    setFailedScans(0);
+    setHintsUsed(0);
+    setLevelPassword("");
+    setShowTutorial(false);
+    setMobileMenuOpen(false);
+    
+    // Reset scroll position for new game
+    setUserScrolled(false);
+    
+    addToTerminal("🚀 ADVANCED PORT SCANNER CHALLENGE STARTED!", "success");
+    addToTerminal("MISSION OBJECTIVES:", "info");
+    addToTerminal("• Scan all REQUIRED targets (gateway, file server, web server)", "info");
+    addToTerminal("• Find at least 4 HIGH/CRITICAL risk vulnerabilities", "info");
+    addToTerminal("• Discover at least 1 CRITICAL vulnerability", "info");
+    addToTerminal("", "info");
+    addToTerminal("STRATEGY:", "info");
+    addToTerminal("• Start with easy targets (🟢)", "info");
+    addToTerminal("• Some scans may fail - try again", "info");
+    addToTerminal("• Use 'hint' command if stuck (costs 10 points)", "info");
+    addToTerminal("scanner@hacking-zone:~$ ", "prompt");
+  };
+
+  const pauseGame = () => {
+    setGameStatus(prev => ({ ...prev, isPaused: !prev.isPaused }));
+  };
+
+  const resetGame = () => {
+    setGameStatus({
+      status: "idle",
+      timeElapsed: 0,
+      score: 0,
+      targetsFound: 0,
+      vulnerabilitiesFound: 0,
+      level: 5,
+      isPaused: false,
+      phase: "exploration"
+    });
+    
+    setScanResults([]);
+    setActiveScan(null);
+    setTerminalHistory([
+      { 
+        id: 1, 
+        message: "System reset complete.", 
+        type: "system",
+        timestamp: new Date().toLocaleTimeString()
+      },
+      { 
+        id: 2, 
+        message: "Type 'start' to begin the Port Scanner challenge", 
+        type: "info",
+        timestamp: new Date().toLocaleTimeString()
+      },
+      { 
+        id: 3, 
+        message: "scanner@hacking-zone:~$ ", 
+        type: "prompt",
+        timestamp: new Date().toLocaleTimeString()
+      }
+    ]);
+    setCommandHistory([]);
+    setScanAttempts(0);
+    setFailedScans(0);
+    setHintsUsed(0);
+    setLevelPassword("");
+    setMobileMenuOpen(false);
+    setCurrentDirectory("/home/scanner");
+    setUserScrolled(false);
+  };
+
+  const generateLevelPassword = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return `HZ-L6-${password}`;
+  };
+
+  const completeLevel = () => {
+    if (gameStatus.status === "running") {
+      const password = generateLevelPassword();
+      setLevelPassword(password);
+      setGameStatus(prev => ({ ...prev, status: "completed" }));
+      
+      // Calculate final score with bonuses/penalties
+      const timeBonus = Math.max(0, 300 - gameStatus.timeElapsed) * 2;
+      const efficiencyBonus = Math.max(0, 50 - (failedScans * 10));
+      const hintPenalty = hintsUsed * 10;
+      const finalScore = gameStatus.score + timeBonus + efficiencyBonus - hintPenalty;
+      
+      addToTerminal("🎉 ADVANCED PORT SCANNING MASTERED!", "success");
+      addToTerminal("All mission objectives completed successfully!", "success");
+      addToTerminal(`🔑 Level 6 Password: ${password}`, "success");
+      addToTerminal(`📊 Final Score: ${finalScore} (Base: ${gameStatus.score} + Time: ${timeBonus} + Efficiency: ${efficiencyBonus} - Hints: ${hintPenalty})`, "success");
+      
+      const xpEarned = 200 + Math.floor(finalScore / 5);
+      addToTerminal(`✨ +${xpEarned} XP Earned!`, "success");
+      
+      try {
+        gameActions.completeLevel(5, xpEarned, password);
+      } catch (error) {
+        console.error('GameContext error:', error);
+      }
+    }
+  };
+
+  const copyPasswordToClipboard = () => {
+    navigator.clipboard.writeText(levelPassword).then(() => {
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    });
+  };
+
+  const quickCommands = [
+    { command: "targets", description: "Show network targets" },
+    { command: "portscan 192.168.1.1", description: "Scan gateway" },
+    { command: "portscan 192.168.1.50", description: "Scan file server" },
+    { command: "portscan 192.168.1.100", description: "Scan web server" },
+    { command: "view scan", description: "View results" },
+    { command: "hint", description: "Get hint (-10 points)" }
+  ];
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md w-full">
+          <Terminal className="w-16 h-16 text-green-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+          <p className="text-gray-400 mb-6">Please log in to play this game</p>
+          <button
+            onClick={() => navigate("/login")}
+            className="w-full bg-green-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-600 transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  // CSS for custom scrollbar
-  const TerminalStyles = () => (
-    <style jsx>{`
-      .terminal-scrollbar::-webkit-scrollbar {
-        width: 6px;
-      }
-      .terminal-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-      }
-      .terminal-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(34, 197, 94, 0.5);
-        border-radius: 3px;
-      }
-      .terminal-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(34, 197, 94, 0.7);
-      }
-    `}</style>
-  );
-
-  // ========== RENDER LOGIC ==========
-
-  // Locked level screen
   if (gameStatus.status === "locked") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 py-8 px-4 pt-24 relative overflow-hidden">
-        {/* Futuristic Background */}
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10" />
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={`particle-${i}`}
-              className="absolute w-2 h-2 bg-cyan-400 rounded-full blur-sm"
-              animate={{
-                y: [0, -20, 0],
-                opacity: [0, 1, 0],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: i * 0.3,
-              }}
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="max-w-2xl mx-auto text-center relative z-10">
-          <div className="glass card-cyber p-8 rounded-2xl border border-orange-500/30 bg-gray-900/60 backdrop-blur-sm">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            >
-              <Radar className="w-16 h-16 text-orange-400 mx-auto mb-6" />
-            </motion.div>
-            <h1 className="text-4xl font-bold text-white mb-4">The Port Scanner</h1>
-            <p className="text-gray-300 mb-6 text-lg">Level 5: Network Scanning & Vulnerability Assessment</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black py-4 sm:py-8 px-3 sm:px-4 pt-20 sm:pt-24">
+        <div className="max-w-4xl mx-auto">
+          <div className="glass card-cyber p-4 sm:p-8 rounded-2xl border border-green-500/30">
+            <Terminal className="w-12 h-12 sm:w-16 sm:h-16 text-green-400 mx-auto mb-4 sm:mb-6" />
+            <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4 text-center">The Port Scanner</h1>
+            <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-lg text-center">Level 5: Advanced Network Reconnaissance</p>
             
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-6 mb-6">
-              <Key className="w-8 h-8 text-orange-400 mx-auto mb-3" />
-              <h3 className="text-white font-semibold mb-2">Level 5 Password Required</h3>
-              <p className="text-gray-300 text-sm mb-4">
+            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+              <Key className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-white font-semibold mb-1 sm:mb-2 text-sm sm:text-base text-center">Level 5 Password Required</h3>
+              <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4 text-center">
                 Enter the password from Encrypted Zone level
               </p>
               
               <div className="max-w-md mx-auto">
-                <input
-                  type="text"
-                  value={passwordInput}
-                  onChange={(e) => {
-                    setPasswordInput(e.target.value);
-                    setPasswordError("");
-                  }}
-                  placeholder="Enter Level 5 Password (HZ-L5-...)"
-                  className="w-full bg-black/50 border border-orange-500/50 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-orange-400 text-center font-mono"
-                  onKeyPress={(e) => e.key === 'Enter' && checkLevelPassword()}
-                />
-                {passwordError && (
-                  <p className="text-red-400 text-sm mt-2">{passwordError}</p>
-                )}
+                <div className="terminal bg-black border border-green-500/50 rounded-lg p-4 mb-3">
+                  <div className="text-green-400 font-mono text-sm">
+                    <div>$ Enter Level 5 Password:</div>
+                    <form onSubmit={(e) => { e.preventDefault(); checkLevelPassword(); }} className="flex items-center">
+                      <span className="text-green-400 mr-2">$</span>
+                      <input
+                        type="text"
+                        value={terminalInput}
+                        onChange={(e) => setTerminalInput(e.target.value)}
+                        className="flex-1 bg-transparent text-green-400 outline-none font-mono"
+                        placeholder="HZ-L5-..."
+                        autoFocus
+                      />
+                    </form>
+                  </div>
+                </div>
                 <button
                   onClick={checkLevelPassword}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold mt-4 hover:shadow-lg hover:shadow-orange-500/20 transition-all"
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all text-sm sm:text-base"
                 >
                   Unlock Level 5
                 </button>
               </div>
             </div>
 
-            <div className="text-left bg-gray-800/30 rounded-xl p-4">
-              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-400" />
-                What to Expect:
+            <div className="text-left bg-gray-800/30 rounded-xl p-3 sm:p-4">
+              <h4 className="text-white font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                Advanced Challenge Features:
               </h4>
-              <ul className="text-gray-300 text-sm space-y-2">
-                <li>• Scan network targets for open ports</li>
-                <li>• Identify vulnerable services and misconfigurations</li>
-                <li>• Evade firewall and intrusion detection systems</li>
-                <li>• Learn common port numbers and their services</li>
-                <li>• Understand network reconnaissance techniques</li>
+              <ul className="text-gray-300 text-xs sm:text-sm space-y-1 sm:space-y-2">
+                <li>• Realistic terminal with scan failures</li>
+                <li>• Multiple difficulty levels (Easy 🟢, Medium 🟡, Hard 🔴)</li>
+                <li>• Strategic hint system with point costs</li>
+                <li>• Critical vulnerability detection</li>
+                <li>• Smart scroll behavior - respects user position</li>
               </ul>
             </div>
           </div>
@@ -1174,359 +1044,557 @@ export default function PortScanner() {
     );
   }
 
-  // Main game screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 py-8 px-4 pt-24 relative overflow-hidden">
-      <TerminalStyles />
-      
-      {/* Futuristic Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Animated Grid */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="grid grid-cols-20 grid-rows-20 h-full w-full">
-            {[...Array(400)].map((_, i) => (
-              <div
-                key={`grid-${i}`}
-                className="border border-cyan-500/10 animate-pulse"
-                style={{
-                  animationDelay: `${(i % 10) * 0.1}s`,
-                  animationDuration: '3s'
-                }}
-              />
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black py-4 sm:py-8 px-3 sm:px-4 pt-20 sm:pt-24">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 p-3 sm:p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => navigate("/levels")}
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            <Terminal className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-white">Port Scanner</h1>
+              <p className="text-green-400 text-xs">Level 5 - ADVANCED</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 text-xs">
+              <div className="text-center">
+                <div className="text-green-400 font-bold">{gameStatus.score}</div>
+                <div className="text-gray-400">Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-cyan-400 font-bold">{gameStatus.targetsFound}</div>
+                <div className="text-gray-400">Scanned</div>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1 sm:p-2 text-gray-400 hover:text-white"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
 
-        {/* Floating Tech Elements */}
-        <div className="absolute inset-0">
+        {/* Mobile Start Button */}
+        {gameStatus.status === "idle" && (
+          <div className="mt-3">
+            <button
+              onClick={startGame}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <Play className="w-4 h-4" />
+              Start Advanced Challenge
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 opacity-10">
           {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={`float-${i}`}
-              className="absolute"
-              animate={{
-                y: [0, -20, 0],
-                x: [0, 10, 0],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: 8 + Math.random() * 4,
-                repeat: Infinity,
-                delay: i * 0.5,
-              }}
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-green-400 rounded-full animate-pulse"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`
               }}
-            >
-              <div className="w-2 h-2 bg-cyan-400 rounded-full blur-sm" />
-            </motion.div>
+            />
           ))}
         </div>
-
-        {/* Scanning Lines */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 via-transparent to-cyan-500/5"
-          animate={{
-            y: ['-100%', '200%'],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            repeatType: 'loop',
-          }}
-        />
-
-        {/* Glowing Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}} />
-        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        {/* Desktop Header */}
+        <div className="hidden lg:flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/levels")}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-gray-800/50 px-4 py-2 rounded-xl border border-gray-700/50 hover:border-gray-600/50"
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               Back to Levels
             </button>
             <div className="flex items-center gap-3">
-              <motion.div
-                animate={{ rotate: [0, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Radar className="w-8 h-8 text-orange-400" />
-              </motion.div>
+              <Terminal className="w-8 h-8 text-green-400" />
               <div>
                 <h1 className="text-3xl font-bold text-white">The Port Scanner</h1>
-                <p className="text-orange-400 text-sm">Network Scanning & Vulnerability Assessment</p>
+                <p className="text-green-400 text-sm">Advanced Network Reconnaissance</p>
               </div>
             </div>
           </div>
 
+          {gameStatus.status === "idle" && (
+            <button
+              onClick={startGame}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/20 transition-all flex items-center gap-2"
+            >
+              <Play className="w-5 h-5" />
+              Start Advanced Challenge
+            </button>
+          )}
+
           <div className="flex items-center gap-6">
-            <div className="text-center bg-orange-500/10 px-4 py-2 rounded-xl border border-orange-500/20">
-              <div className="text-2xl font-bold text-orange-400">{gameStatus.score}</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-400">{gameStatus.score}</div>
               <div className="text-gray-400 text-sm">Score</div>
             </div>
-            <div className="text-center bg-green-500/10 px-4 py-2 rounded-xl border border-green-500/20">
-              <div className="text-2xl font-bold text-green-400">
-                {gameStatus.vulnerabilitiesFound}/3
-              </div>
-              <div className="text-gray-400 text-sm">Vulnerabilities</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-cyan-400">{gameStatus.targetsFound}/4</div>
+              <div className="text-gray-400 text-sm">Required</div>
             </div>
-            <div className="text-center bg-red-500/10 px-4 py-2 rounded-xl border border-red-500/20">
-              <div className="flex items-center gap-1">
-                <div className="text-2xl font-bold text-red-400">{gameStatus.lives}</div>
-                <Shield className="w-4 h-4 text-red-400" />
-              </div>
-              <div className="text-gray-400 text-sm">Lives</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-400">{gameStatus.vulnerabilitiesFound}/4</div>
+              <div className="text-gray-400 text-sm">Vulnerabilities</div>
             </div>
           </div>
         </div>
 
-        {/* Tutorial */}
+        {/* Mobile Sidebar Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: 300 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 300 }}
+              className="lg:hidden fixed top-16 right-0 bottom-0 w-80 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700 z-20 p-4 overflow-y-auto"
+            >
+              {/* Quick Commands */}
+              <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50 mb-4">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <Command className="w-5 h-5 text-green-400" />
+                  Quick Commands
+                </h3>
+                <div className="space-y-2">
+                  {quickCommands.map((cmd, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setTerminalInput(cmd.command);
+                        setMobileMenuOpen(false);
+                        setTimeout(() => {
+                          handleTerminalSubmit(new Event('submit'));
+                        }, 100);
+                      }}
+                      className="w-full text-left p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors text-sm"
+                    >
+                      <div className="text-green-400 font-mono">{cmd.command}</div>
+                      <div className="text-gray-400 text-xs">{cmd.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Game Stats */}
+              <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50 mb-4">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-400" />
+                  Game Stats
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Score:</span>
+                    <span className="text-green-400">{gameStatus.score}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Required Targets:</span>
+                    <span className="text-cyan-400">{gameStatus.targetsFound}/4</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Vulnerabilities:</span>
+                    <span className="text-yellow-400">{gameStatus.vulnerabilitiesFound}/4</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Failed Scans:</span>
+                    <span className="text-red-400">{failedScans}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Hints Used:</span>
+                    <span className="text-blue-400">{hintsUsed}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tutorial Overlay */}
         <AnimatePresence>
           {showTutorial && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="glass card-cyber p-8 max-w-4xl mx-4 border border-orange-500/30 rounded-2xl bg-gray-900/80 backdrop-blur-sm"
+                className="glass card-cyber p-4 sm:p-6 max-w-2xl w-full border border-green-500/30 rounded-2xl"
               >
-                <h2 className="text-3xl font-bold text-white mb-4 text-center">Welcome to The Port Scanner</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold text-orange-400">🎯 Game Objective</h3>
-                    <p className="text-gray-300">Find 3 vulnerable ports across different target systems using both terminal commands and visual interface.</p>
-                    
-                    <h3 className="text-xl font-semibold text-green-400">💻 Terminal Commands</h3>
-                    <ul className="text-gray-300 space-y-2 text-sm">
-                      <li><code className="bg-gray-800 px-2 py-1 rounded">scan 192.168.1.45</code> - Start port scan</li>
-                      <li><code className="bg-gray-800 px-2 py-1 rounded">vuln 3389</code> - Identify vulnerable port</li>
-                      <li><code className="bg-gray-800 px-2 py-1 rounded">ls</code> - List files</li>
-                      <li><code className="bg-gray-800 px-2 py-1 rounded">cat notes.md</code> - Read files</li>
-                      <li><code className="bg-gray-800 px-2 py-1 rounded">help</code> - Show all commands</li>
-                    </ul>
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-4 text-center">Advanced Port Scanner</h2>
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Terminal className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Smart Scroll Behavior</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Terminal respects your reading position. Use 'Scroll to Bottom' button when needed.</p>
+                    </div>
                   </div>
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-semibold text-red-400">⚠️ High-Risk Ports</h3>
-                    <ul className="text-gray-300 space-y-1 text-sm">
-                      <li>• 21, 23 - Clear text protocols</li>
-                      <li>• 25 - Mail server risks</li>
-                      <li>• 1433, 27017 - Database exposure</li>
-                      <li>• 3389, 5900 - Remote access</li>
-                    </ul>
-                    
-                    <h3 className="text-xl font-semibold text-yellow-400">🛡️ Defenses</h3>
-                    <p className="text-gray-300 text-sm">Watch for firewalls, IDS alerts, and other security measures that may slow your scanning.</p>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Strategic Gameplay</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Start with easy targets, use hints wisely (-10 points)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400 mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Mission Objectives</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Scan 3 required targets, find 4+ vulnerabilities including 1 critical</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 mt-1 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Scan Failures</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Scans can fail! Hard targets have 50% success rate. Try again!</p>
+                    </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowTutorial(false)}
-                  className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
+                  className="w-full bg-green-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-green-600 transition-colors text-sm sm:text-base"
                 >
-                  Start Hacking!
+                  Start Advanced Challenge
                 </button>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-          {/* Left Column - Terminal & Scanner */}
-          <div className="space-y-6">
-            <TerminalWithDesign />
-            <VisualScanResults />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Main Terminal Area */}
+          <div className="lg:col-span-2">
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50 h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <Terminal className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Advanced Scanner Terminal
+                  {activeScan && (
+                    <span className="text-yellow-400 text-sm font-normal">
+                      Scanning {activeScan.ip}... {activeScan.progress}%
+                    </span>
+                  )}
+                </h2>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-red-400">Failed: {failedScans}</span>
+                  <span className="text-blue-400">Hints: {hintsUsed}</span>
+                </div>
+              </div>
+
+              {/* Terminal Output */}
+              <div 
+                ref={terminalContainerRef}
+                className="terminal bg-black border border-green-500/30 rounded-xl p-3 sm:p-4 h-96 overflow-y-auto font-mono text-sm scrollbar-thin scrollbar-thumb-green-500/30 scrollbar-track-gray-800/50"
+                onWheel={(e) => {
+                  // Detect if user is intentionally scrolling up
+                  if (e.deltaY < 0) {
+                    setUserScrolled(true);
+                  }
+                }}
+              >
+                <div className="space-y-1">
+                  {terminalHistory.map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-2">
+                      <span className="text-gray-500 text-xs flex-shrink-0">{entry.timestamp}</span>
+                      <pre className={`flex-1 whitespace-pre-wrap break-words ${
+                        entry.type === "error" ? "text-red-400" :
+                        entry.type === "success" ? "text-green-400" :
+                        entry.type === "info" ? "text-cyan-400" :
+                        entry.type === "command" ? "text-yellow-400" :
+                        entry.type === "scan" ? "text-blue-400" :
+                        entry.type === "system" ? "text-gray-400" :
+                        entry.type === "prompt" ? "text-green-400 font-semibold" : "text-gray-300"
+                      }`}>
+                        {entry.message}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+                <div ref={terminalEndRef} />
+              </div>
+
+              {/* Scroll to bottom button - Only shows when user has scrolled up */}
+              {userScrolled && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => {
+                    setUserScrolled(false);
+                    setTimeout(() => {
+                      terminalEndRef.current?.scrollIntoView({ 
+                        behavior: "smooth",
+                        block: "nearest"
+                      });
+                    }, 100);
+                  }}
+                  className="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 ml-auto shadow-lg border border-green-400/30 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                  New Output Available - Scroll to Bottom
+                </motion.button>
+              )}
+
+              {/* Terminal Input and Controls */}
+              <form onSubmit={handleTerminalSubmit} className="mt-4">
+                <div className="flex items-center gap-2 bg-gray-800 border border-green-500/30 rounded-lg p-2 sm:p-3">
+                  <span className="text-green-400 font-mono">$</span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={terminalInput}
+                    onChange={(e) => setTerminalInput(e.target.value)}
+                    placeholder="Type commands here... (help for commands)"
+                    className="flex-1 bg-transparent text-white outline-none font-mono placeholder-gray-400 text-sm sm:text-base"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="bg-green-500 text-white p-1 sm:p-2 rounded hover:bg-green-600 transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
+
+              {/* Quick Commands */}
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <button
+                  onClick={() => {
+                    setTerminalInput("hint");
+                    setTimeout(() => handleTerminalSubmit(new Event('submit')), 100);
+                  }}
+                  className="p-2 bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition-colors text-xs text-left border border-blue-500/30"
+                >
+                  <div className="text-blue-400 font-mono">hint</div>
+                  <div className="text-gray-400">Get help (-10 points)</div>
+                </button>
+                <button
+                  onClick={() => {
+                    setTerminalInput("targets");
+                    setTimeout(() => handleTerminalSubmit(new Event('submit')), 100);
+                  }}
+                  className="p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors text-xs text-left"
+                >
+                  <div className="text-green-400 font-mono">targets</div>
+                  <div className="text-gray-400">Show targets</div>
+                </button>
+                <button
+                  onClick={() => {
+                    setTerminalInput("portscan 192.168.1.1");
+                    setTimeout(() => handleTerminalSubmit(new Event('submit')), 100);
+                  }}
+                  className="p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors text-xs text-left"
+                >
+                  <div className="text-green-400 font-mono">portscan 192.168.1.1</div>
+                  <div className="text-gray-400">Scan gateway</div>
+                </button>
+                <button
+                  onClick={() => {
+                    setTerminalInput("view scan");
+                    setTimeout(() => handleTerminalSubmit(new Event('submit')), 100);
+                  }}
+                  className="p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors text-xs text-left"
+                >
+                  <div className="text-green-400 font-mono">view scan</div>
+                  <div className="text-gray-400">View results</div>
+                </button>
+                <button
+                  onClick={() => {
+                    setTerminalInput("clear");
+                    setTimeout(() => handleTerminalSubmit(new Event('submit')), 100);
+                  }}
+                  className="p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors text-xs text-left"
+                >
+                  <div className="text-green-400 font-mono">clear</div>
+                  <div className="text-gray-400">Clear terminal</div>
+                </button>
+                <button
+                  onClick={() => {
+                    setTerminalInput("help");
+                    setTimeout(() => handleTerminalSubmit(new Event('submit')), 100);
+                  }}
+                  className="p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors text-xs text-left"
+                >
+                  <div className="text-green-400 font-mono">help</div>
+                  <div className="text-gray-400">All commands</div>
+                </button>
+              </div>
+
+              {/* Game Controls */}
+              {gameStatus.status === "running" && (
+                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-700/50">
+                  <div className="flex gap-2 sm:gap-3">
+                    <button
+                      onClick={pauseGame}
+                      className="flex-1 bg-yellow-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+                    >
+                      {gameStatus.isPaused ? <Play className="w-4 h-4 sm:w-5 sm:h-5" /> : <Pause className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      {gameStatus.isPaused ? "Resume" : "Pause"}
+                    </button>
+                    <button
+                      onClick={resetGame}
+                      className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+                    >
+                      <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Right Column - Command Reference & Controls */}
-          <div className="space-y-6">
-            <CommandReference />
-            
-            {/* Game Controls */}
-            <div className="glass card-cyber p-6 rounded-2xl border border-purple-500/30 bg-gray-900/60 backdrop-blur-sm relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-blue-500/5 rounded-2xl" />
-              <div className="relative z-10">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-purple-400" />
-                  Game Controls
-                </h3>
-                
-                <div className="flex gap-3 mb-4">
-                  {gameStatus.status === "idle" ? (
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={startGame}
-                      className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-5 h-5" />
-                      Start Game
-                    </motion.button>
-                  ) : (
-                    <>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={pauseGame}
-                        className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-yellow-500/20 transition-all flex items-center justify-center gap-2"
-                      >
-                        {gameStatus.isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-                        {gameStatus.isPaused ? "Resume" : "Pause"}
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={resetGame}
-                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-red-500/20 transition-all flex items-center justify-center gap-2"
-                      >
-                        <RotateCcw className="w-5 h-5" />
-                        Reset Game
-                      </motion.button>
-                    </>
-                  )}
+          {/* Side Panel */}
+          <div className="hidden lg:block lg:col-span-1 space-y-4 sm:space-y-6">
+            {/* Difficulty Guide */}
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-400" />
+                Challenge Guide
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <span className="text-white">Easy Targets</span>
+                  <span className="text-gray-400 ml-auto">90% success</span>
                 </div>
-
-                {/* Sound Toggle */}
-                <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                  <span className="text-gray-300 text-sm">Sound Effects</span>
-                  <button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className={`p-2 rounded-lg transition-all ${
-                      soundEnabled 
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                    }`}
-                  >
-                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  </button>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                  <span className="text-white">Medium Targets</span>
+                  <span className="text-gray-400 ml-auto">70% success</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-500 rounded"></div>
+                  <span className="text-white">Hard Targets</span>
+                  <span className="text-gray-400 ml-auto">50% success</span>
+                </div>
+                <div className="mt-2 p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
+                  <div className="text-yellow-400 text-xs">Scans can fail! Failed attempts cost points.</div>
                 </div>
               </div>
             </div>
 
-            {/* Active Defenses */}
-            {activeDefenses.length > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glass card-cyber p-6 rounded-2xl border border-red-500/30 bg-red-500/5 backdrop-blur-sm"
-              >
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-red-400" />
-                  Active Defense Systems
-                  <span className="text-red-400 text-sm bg-red-500/20 px-2 py-1 rounded-full ml-2">
-                    {activeDefenses.length} Active
-                  </span>
-                </h3>
-                <div className="space-y-2">
-                  {activeDefenses.map(defense => (
-                    <motion.div
-                      key={`defense-${defense.id}`}
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex items-center gap-2"
-                    >
-                      <AlertTriangle className="w-4 h-4" />
-                      {defense.type}
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Game Log */}
-            <div className="glass card-cyber p-6 rounded-2xl border border-cyan-500/30 bg-gray-900/60 backdrop-blur-sm">
+            {/* Mission Objectives */}
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
               <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-cyan-400" />
-                Activity Log
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                Mission Objectives
               </h3>
-              <div className="bg-gray-800/50 rounded-xl p-4 max-h-60 overflow-y-auto">
-                {gameLog.length === 0 ? (
-                  <p className="text-gray-500 text-sm italic">No activity yet</p>
-                ) : (
-                  <div className="space-y-2">
-                    {gameLog.map(log => (
-                      <div key={`gamelog-${log.id}`} className="flex items-start gap-3 text-sm">
-                        <span className="text-gray-500 text-xs mt-0.5 flex-shrink-0">{log.timestamp}</span>
-                        <span className={`flex-1 ${
-                          log.type === "error" ? "text-red-400" :
-                          log.type === "warning" ? "text-yellow-400" :
-                          log.type === "success" ? "text-green-400" : "text-gray-300"
-                        }`}>
-                          {log.message}
-                        </span>
-                      </div>
-                    ))}
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Required Targets:</span>
+                  <span className="text-cyan-400">{gameStatus.targetsFound}/4</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Vulnerabilities:</span>
+                  <span className="text-yellow-400">{gameStatus.vulnerabilitiesFound}/4</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Critical Found:</span>
+                  <span className={scanResults.some(r => r.ports.some(p => p.security === "critical")) ? "text-green-400" : "text-red-400"}>
+                    {scanResults.some(r => r.ports.some(p => p.security === "critical")) ? "✅" : "❌"}
+                  </span>
+                </div>
+                <div className="mt-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                  <div className="text-blue-400 text-xs">Find SMB, RDP, or Rsync for critical vulnerabilities</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Stats */}
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-green-400" />
+                Performance
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Scan Attempts:</span>
+                  <span className="text-cyan-400">{scanAttempts}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Failed Scans:</span>
+                  <span className="text-red-400">{failedScans}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Hints Used:</span>
+                  <span className="text-blue-400">{hintsUsed}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Success Rate:</span>
+                  <span className="text-green-400">
+                    {scanAttempts > 0 ? Math.round(((scanAttempts - failedScans) / scanAttempts) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Command Reference */}
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <Command className="w-5 h-5 text-green-400" />
+                Quick Commands
+              </h3>
+              <div className="space-y-2 text-sm">
+                {quickCommands.map((cmd, index) => (
+                  <div key={index} className="p-2 bg-gray-800/50 rounded">
+                    <div className="text-green-400 font-mono text-xs">{cmd.command}</div>
+                    <div className="text-gray-400 text-xs">{cmd.description}</div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
           </div>
         </div>
 
         {/* Learning Objectives */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass card-cyber p-6 rounded-2xl border border-cyan-500/30 bg-gray-900/60 backdrop-blur-sm"
-        >
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
+        <div className="mt-6 sm:mt-8 glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
+          <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             Learning Objectives
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                title: "Port Scanning",
-                description: "Learn network reconnaissance and port discovery techniques",
-                color: "orange",
-                icon: <Radar className="w-5 h-5" />
-              },
-              {
-                title: "Service Identification", 
-                description: "Understand common port numbers and their associated services",
-                color: "green",
-                icon: <Network className="w-5 h-5" />
-              },
-              {
-                title: "Vulnerability Assessment",
-                description: "Identify insecure services and misconfigurations",
-                color: "red", 
-                icon: <AlertTriangle className="w-5 h-5" />
-              },
-              {
-                title: "Terminal Proficiency",
-                description: "Master Linux commands and network tools",
-                color: "blue",
-                icon: <Terminal className="w-5 h-5" />
-              }
-            ].map((obj, index) => (
-              <motion.div
-                key={`objective-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`p-4 bg-${obj.color}-500/10 rounded-xl border border-${obj.color}-500/20 hover:border-${obj.color}-400/40 transition-all duration-300`}
-              >
-                <div className={`text-${obj.color}-400 mb-2`}>
-                  {obj.icon}
-                </div>
-                <h4 className={`font-semibold text-${obj.color}-400 mb-2`}>{obj.title}</h4>
-                <p className="text-gray-300 text-sm">{obj.description}</p>
-              </motion.div>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+              <h4 className="font-semibold text-green-400 mb-1 sm:mb-2 text-sm sm:text-base">Advanced Scanning</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Learn realistic port scanning with failure scenarios and retry strategies</p>
+            </div>
+            <div className="p-3 sm:p-4 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+              <h4 className="font-semibold text-cyan-400 mb-1 sm:mb-2 text-sm sm:text-base">Risk Assessment</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Identify critical vulnerabilities like SMB, RDP, and database exposures</p>
+            </div>
+            <div className="p-3 sm:p-4 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+              <h4 className="font-semibold text-yellow-400 mb-1 sm:mb-2 text-sm sm:text-base">Strategic Planning</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Develop scanning strategies based on target difficulty and success probability</p>
+            </div>
+            <div className="p-3 sm:p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+              <h4 className="font-semibold text-purple-400 mb-1 sm:mb-2 text-sm sm:text-base">Resource Management</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Manage scan attempts, hints, and points for optimal penetration testing</p>
+            </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Game Overlays */}
         <AnimatePresence>
@@ -1534,68 +1602,48 @@ export default function PortScanner() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="fixed inset-0 bg-green-500/10 backdrop-blur-sm flex items-center justify-center z-50"
+              className="fixed inset-0 bg-green-500/10 backdrop-blur-sm flex items-center justify-center z-20 p-4"
             >
-              <div className="text-center bg-gray-800/95 p-8 rounded-2xl border border-green-500/30 max-w-md mx-4 shadow-2xl">
-                <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Level Complete!</h3>
-                <p className="text-gray-300 mb-4">All vulnerabilities successfully identified</p>
+              <div className="text-center bg-gray-800/95 p-4 sm:p-8 rounded-2xl border border-green-500/30 max-w-md w-full shadow-2xl">
+                <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-400 mx-auto mb-3 sm:mb-4" />
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Advanced Port Scanning Mastered!</h3>
+                <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">All mission objectives completed successfully</p>
                 
-                <div className="bg-gray-700/80 p-4 rounded-xl border border-orange-500/30 mb-4">
+                <div className="bg-gray-700/80 p-3 sm:p-4 rounded-xl border border-purple-500/30 mb-3 sm:mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Key className="w-5 h-5 text-orange-400" />
-                      <span className="text-white font-semibold">Level 6 Password:</span>
+                      <Key className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                      <span className="text-white font-semibold text-sm sm:text-base">Level 6 Password:</span>
                     </div>
                     <button
                       onClick={copyPasswordToClipboard}
-                      className="flex items-center gap-1 text-orange-400 hover:text-orange-300 transition-colors"
+                      className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors"
                     >
-                      {passwordCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {passwordCopied ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : <Copy className="w-3 h-3 sm:w-4 sm:h-4" />}
                       <span className="text-xs">{passwordCopied ? "Copied!" : "Copy"}</span>
                     </button>
                   </div>
-                  <div className="bg-black/70 p-3 rounded border border-gray-600">
-                    <code className="text-green-400 font-mono text-sm break-all">
+                  <div className="bg-black/70 p-2 sm:p-3 rounded border border-gray-600">
+                    <code className="text-green-400 font-mono text-xs sm:text-sm break-all">
                       {levelPassword}
                     </code>
                   </div>
                 </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={resetGame}
-                    className="flex-1 bg-orange-500 text-white px-6 py-2 rounded-xl hover:bg-orange-600 transition-colors"
+                    className="flex-1 bg-green-500 text-white px-4 sm:px-6 py-2 rounded-xl hover:bg-green-600 transition-colors text-sm sm:text-base"
                   >
                     Play Again
                   </button>
                   <button
                     onClick={() => navigate("/levels")}
-                    className="flex-1 bg-cyan-500 text-white px-6 py-2 rounded-xl hover:bg-cyan-600 transition-colors"
+                    className="flex-1 bg-cyan-500 text-white px-4 sm:px-6 py-2 rounded-xl hover:bg-cyan-600 transition-colors text-sm sm:text-base"
                   >
                     Go to Levels
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          )}
-
-          {gameStatus.status === "failed" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-50"
-            >
-              <div className="text-center bg-gray-800/95 p-8 rounded-2xl border border-red-500/30 max-w-md mx-4">
-                <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Scan Detected!</h3>
-                <p className="text-gray-300 mb-4">Target systems detected your activities</p>
-                <button
-                  onClick={resetGame}
-                  className="bg-orange-500 text-white px-6 py-2 rounded-xl hover:bg-orange-600 transition-colors"
-                >
-                  Try Again
-                </button>
               </div>
             </motion.div>
           )}

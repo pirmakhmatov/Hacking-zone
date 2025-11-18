@@ -11,7 +11,8 @@ import {
   Mail, Lock, Unlock, Filter, Eye, EyeOff, Server,
   Users, Cpu, Wifi, Globe, Terminal, Key, Copy, Check,
   MessageCircle, Link, User, Phone, CreditCard, Smartphone,
-  HelpCircle, Star, Award, Sparkles, ChevronDown, Volume2, VolumeX
+  HelpCircle, Star, Award, Sparkles, ChevronDown, Volume2, VolumeX,
+  Menu as MenuIcon, X, Settings
 } from "lucide-react";
 
 export default function PhishersTrap() {
@@ -51,6 +52,7 @@ export default function PhishersTrap() {
   const [showHints, setShowHints] = useState(true);
   const [gameSpeed, setGameSpeed] = useState(1);
   const [comboMultiplier, setComboMultiplier] = useState(1);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const audioContextRef = useRef(null);
   const emailCounterRef = useRef(0);
@@ -456,7 +458,7 @@ export default function PhishersTrap() {
         // Remove old emails (older than 2 minutes or more than 8 emails)
         const now = Date.now();
         setEmails(prev => prev.filter(email => 
-          now - email.id < 120000 && prev.indexOf(email) < 8
+          now - email.id < 120000 && prev.indexOf(email) < 30
         ));
 
         // Don't generate if we have too many active emails
@@ -780,16 +782,200 @@ export default function PhishersTrap() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [gameStatus.status, gameStatus.isPaused]);
 
+  // Mobile responsive stats display
+  const MobileStats = () => (
+    <div className="flex items-center gap-4 text-xs">
+      <div className="text-center">
+        <div className="text-purple-400 font-bold">{gameStatus.score}</div>
+        <div className="text-gray-400">Score</div>
+      </div>
+      <div className="text-center">
+        <div className="text-green-400 font-bold">{gameStatus.phishingDetected}/5</div>
+        <div className="text-gray-400">Caught</div>
+      </div>
+      <div className="text-center">
+        <div className="flex items-center gap-1">
+          <div className="text-red-400 font-bold">{gameStatus.lives}</div>
+          <Heart className="w-3 h-3 text-red-400" />
+        </div>
+        <div className="text-gray-400">Lives</div>
+      </div>
+    </div>
+  );
+
+  // Enhanced mobile header similar to FirewallGame
+  const MobileHeader = () => (
+    <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 p-3 sm:p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => navigate("/levels")}
+            className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-white">Phisher's Trap</h1>
+            <p className="text-purple-400 text-xs">Level 2</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <MobileStats />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1 sm:p-2 text-gray-400 hover:text-white"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mobile sidebar menu
+  const MobileSidebar = () => (
+    <AnimatePresence>
+      {mobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, x: 300 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 300 }}
+          className="lg:hidden fixed top-16 right-0 bottom-0 w-80 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700 z-20 p-4 overflow-y-auto"
+        >
+          {/* Game Stats */}
+          <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50 mb-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <Award className="w-5 h-5 text-yellow-400" />
+              Game Stats
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Time:</span>
+                <span className="text-cyan-400">
+                  {Math.floor(gameStatus.timeElapsed / 60)}:{(gameStatus.timeElapsed % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Combo:</span>
+                <span className="text-green-400">x{comboMultiplier.toFixed(1)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Max Streak:</span>
+                <span className="text-yellow-400">{gameStatus.maxStreak}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Accuracy:</span>
+                <span className="text-green-400">
+                  {gameStatus.phishingDetected + gameStatus.phishingMissed > 0 
+                    ? Math.round((gameStatus.phishingDetected) / (gameStatus.phishingDetected + gameStatus.phishingMissed) * 100)
+                    : 0}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Templates Used:</span>
+                <span className="text-purple-400">{usedTemplatesRef.current.size}/{emailTemplates.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Game Log */}
+          <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50 mb-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <Terminal className="w-5 h-5" />
+              Security Log
+            </h3>
+            <div className="bg-gray-800/50 rounded-xl p-3 max-h-48 overflow-y-auto">
+              {gameLog.length === 0 ? (
+                <p className="text-gray-500 text-sm italic">No activity yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {gameLog.map(log => (
+                    <div key={log.id} className="flex items-start gap-2 text-xs">
+                      <span className="text-gray-500 text-xs mt-0.5 flex-shrink-0">{log.timestamp}</span>
+                      <span className={`flex-1 ${
+                        log.type === "error" ? "text-red-400" :
+                        log.type === "warning" ? "text-yellow-400" :
+                        log.type === "success" ? "text-green-400" : "text-gray-300"
+                      }`}>
+                        {log.message}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Achievements */}
+          <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-400" />
+              Achievements
+            </h3>
+            <div className="space-y-2 text-sm">
+              <div className={`flex items-center gap-2 ${achievements.firstBlood ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className="w-2 h-2 bg-current rounded-full" />
+                <span>First Blood</span>
+              </div>
+              <div className={`flex items-center gap-2 ${achievements.noMistakes ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className="w-2 h-2 bg-current rounded-full" />
+                <span>5+ Streak</span>
+              </div>
+              <div className={`flex items-center gap-2 ${achievements.speedRunner ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className="w-2 h-2 bg-current rounded-full" />
+                <span>Speed Runner</span>
+              </div>
+              <div className={`flex items-center gap-2 ${achievements.perfectGame ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className="w-2 h-2 bg-current rounded-full" />
+                <span>Perfect Game</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Game Settings */}
+          <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50 mt-4">
+            <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-cyan-400" />
+              Settings
+            </h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Sound:</span>
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="p-1 text-gray-400 hover:text-white"
+                >
+                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </button>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Hints:</span>
+                <button
+                  onClick={() => setShowHints(!showHints)}
+                  className={`p-1 ${showHints ? 'text-green-400' : 'text-gray-400'}`}
+                >
+                  {showHints ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md w-full">
+          <Shield className="w-16 h-16 text-purple-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
-          <p className="text-gray-400 mb-4">Please log in to play this game</p>
+          <p className="text-gray-400 mb-6">Please log in to play this game</p>
           <button
             onClick={() => navigate("/login")}
-            className="bg-cyan-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-cyan-600 transition-colors"
+            className="w-full bg-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors"
           >
             Go to Login
           </button>
@@ -800,43 +986,44 @@ export default function PhishersTrap() {
 
   if (gameStatus.status === "locked") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-8 px-4 pt-24">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-4 px-3 sm:py-8 sm:px-4 pt-20 sm:pt-24">
+        <MobileHeader />
         <div className="max-w-2xl mx-auto text-center">
-          <div className="glass card-cyber p-8 rounded-2xl border border-purple-500/30">
-            <Mail className="w-16 h-16 text-purple-400 mx-auto mb-6" />
-            <h1 className="text-4xl font-bold text-white mb-4">Phisher's Trap</h1>
-            <p className="text-gray-300 mb-6 text-lg">Level 2: Email Security Challenge</p>
+          <div className="glass card-cyber p-4 sm:p-8 rounded-2xl border border-purple-500/30">
+            <Mail className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400 mx-auto mb-4 sm:mb-6" />
+            <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">Phisher's Trap</h1>
+            <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-lg">Level 2: Email Security Challenge</p>
             
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6">
               <button
                 onClick={() => setUnlockMethod("password")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                className={`flex-1 py-2 sm:py-3 rounded-xl font-semibold transition-all text-xs sm:text-base ${
                   unlockMethod === "password" 
                     ? "bg-purple-500 text-white shadow-lg shadow-purple-500/20" 
                     : "bg-gray-700 text-gray-300"
                 }`}
               >
-                <Key className="w-5 h-5 inline mr-2" />
+                <Key className="w-3 h-3 sm:w-5 sm:h-5 inline mr-1 sm:mr-2" />
                 Enter with Password
               </button>
               <button
                 onClick={() => setUnlockMethod("skip")}
-                className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                className={`flex-1 py-2 sm:py-3 rounded-xl font-semibold transition-all text-xs sm:text-base ${
                   unlockMethod === "skip" 
                     ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
                     : "bg-gray-700 text-gray-300"
                 }`}
               >
-                <HelpCircle className="w-5 h-5 inline mr-2" />
+                <HelpCircle className="w-3 h-3 sm:w-5 sm:h-5 inline mr-1 sm:mr-2" />
                 Can't Remember
               </button>
             </div>
 
             {unlockMethod === "password" ? (
-              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-6 mb-6">
-                <Key className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-                <h3 className="text-white font-semibold mb-2">Level 2 Password Required</h3>
-                <p className="text-gray-300 text-sm mb-4">
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                <Key className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mx-auto mb-2 sm:mb-3" />
+                <h3 className="text-white font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Level 2 Password Required</h3>
+                <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">
                   Enter the password from The Firewall Gate level
                 </p>
                 
@@ -849,43 +1036,43 @@ export default function PhishersTrap() {
                       setPasswordError("");
                     }}
                     placeholder="Enter Level 2 Password (HZ-L2-...)"
-                    className="w-full bg-black/50 border border-purple-500/50 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-center font-mono"
+                    className="w-full bg-black/50 border border-purple-500/50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-center font-mono text-sm sm:text-base"
                     onKeyPress={(e) => e.key === 'Enter' && checkLevelPassword()}
                   />
                   {passwordError && (
-                    <p className="text-red-400 text-sm mt-2">{passwordError}</p>
+                    <p className="text-red-400 text-xs sm:text-sm mt-2">{passwordError}</p>
                   )}
                   <button
                     onClick={checkLevelPassword}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold mt-4 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 sm:py-3 rounded-xl font-semibold mt-3 sm:mt-4 hover:shadow-lg hover:shadow-purple-500/20 transition-all text-sm sm:text-base"
                   >
                     Unlock Level 2
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-6 mb-6">
-                <HelpCircle className="w-8 h-8 text-orange-400 mx-auto mb-3" />
-                <h3 className="text-white font-semibold mb-2">Can't Remember Password?</h3>
-                <p className="text-gray-300 text-sm mb-4">
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-orange-400 mx-auto mb-2 sm:mb-3" />
+                <h3 className="text-white font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Can't Remember Password?</h3>
+                <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">
                   Practice mode available. Complete The Firewall Gate for full progression.
                 </p>
                 
                 <button
                   onClick={skipPassword}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all"
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-orange-500/20 transition-all text-sm sm:text-base"
                 >
                   Enter Practice Mode
                 </button>
               </div>
             )}
 
-            <div className="text-left bg-gray-800/30 rounded-xl p-4">
-              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+            <div className="text-left bg-gray-800/30 rounded-xl p-3 sm:p-4">
+              <h4 className="text-white font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                 What to Expect:
               </h4>
-              <ul className="text-gray-300 text-sm space-y-2">
+              <ul className="text-gray-300 text-xs sm:text-sm space-y-1 sm:space-y-2">
                 <li>• Analyze 30 unique email templates</li>
                 <li>• Report phishing and ignore legitimate emails</li>
                 <li>• Multiple difficulty levels with better pacing</li>
@@ -900,7 +1087,14 @@ export default function PhishersTrap() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-8 px-4 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-4 px-3 sm:py-8 sm:px-4 pt-20 sm:pt-24">
+      {/* Mobile Header */}
+      <MobileHeader />
+      
+      {/* Mobile Sidebar */}
+      <MobileSidebar />
+
+      {/* Background Animation */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 opacity-10">
           {[...Array(10)].map((_, i) => (
@@ -918,8 +1112,8 @@ export default function PhishersTrap() {
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        {/* Desktop Header - Hidden on mobile */}
+        <div className="hidden lg:flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/levels")}
@@ -965,24 +1159,24 @@ export default function PhishersTrap() {
 
         {/* Template Progress */}
         {gameStatus.status === "running" && (
-          <div className="mb-6 glass card-cyber p-4 rounded-xl border border-purple-500/30">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-purple-400" />
+          <div className="mb-4 sm:mb-6 glass card-cyber p-3 sm:p-4 rounded-xl border border-purple-500/30">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                 <span className="text-white">Email Templates:</span>
                 <span className="text-green-400">{usedTemplatesRef.current.size}</span>
                 <span className="text-gray-400">/</span>
                 <span className="text-cyan-400">{emailTemplates.length}</span>
-                <span className="text-gray-400">used</span>
+                <span className="text-gray-400 hidden sm:inline">used</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-white">Remaining:</span>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <span className="text-white hidden sm:inline">Remaining:</span>
                 <span className="text-yellow-400">{emailTemplates.length - usedTemplatesRef.current.size}</span>
               </div>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+            <div className="w-full bg-gray-700 rounded-full h-1 sm:h-2 mt-1 sm:mt-2">
               <div 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-1 sm:h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(usedTemplatesRef.current.size / emailTemplates.length) * 100}%` }}
               ></div>
             </div>
@@ -996,40 +1190,40 @@ export default function PhishersTrap() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="glass card-cyber p-8 max-w-2xl mx-4 border border-purple-500/30 rounded-2xl"
+                className="glass card-cyber p-4 sm:p-8 max-w-2xl w-full border border-purple-500/30 rounded-2xl"
               >
-                <h2 className="text-3xl font-bold text-white mb-4 text-center">Welcome to Phisher's Trap</h2>
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-6 h-6 text-purple-400 mt-1" />
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 text-center">Welcome to Phisher's Trap</h2>
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Mail className="w-4 h-4 sm:w-6 sm:h-6 text-purple-400 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="text-white font-semibold">30 Unique Email Templates</h3>
-                      <p className="text-gray-400">Analyze 30 different emails - no repeats until all are used</p>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">30 Unique Email Templates</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Analyze 30 different emails - no repeats until all are used</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-6 h-6 text-yellow-400 mt-1" />
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <AlertTriangle className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-400 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="text-white font-semibold">Better Pacing</h3>
-                      <p className="text-gray-400">Emails arrive at reasonable intervals based on difficulty</p>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Better Pacing</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Emails arrive at reasonable intervals based on difficulty</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="w-6 h-6 text-yellow-400 mt-1" />
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-400 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="text-white font-semibold">Template Management</h3>
-                      <p className="text-gray-400">Game ends if you run out of templates before catching 5 phishing emails</p>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Template Management</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Game ends if you run out of templates before catching 5 phishing emails</p>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowTutorial(false)}
-                  className="w-full bg-purple-500 text-white py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors"
+                  className="w-full bg-purple-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors text-sm sm:text-base"
                 >
                   Start Game
                 </button>
@@ -1038,29 +1232,29 @@ export default function PhishersTrap() {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Email Inbox */}
           <div className="lg:col-span-2">
-            <div className="glass card-cyber p-6 rounded-2xl border border-gray-700/50 h-full">
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50 h-full">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
                   Email Inbox
                   {gameStatus.status === "running" && (
-                    <span className="text-sm text-gray-400">
-                      ({emails.length}/8 active)
+                    <span className="text-xs sm:text-sm text-gray-400">
+                      ({emails.length}/30 active)
                     </span>
                   )}
                 </h2>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   {/* Difficulty Dropdown */}
                   <Menu as="div" className="relative">
                     <Menu.Button 
-                      className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm flex items-center gap-2"
+                      className="bg-gray-700 border border-gray-600 rounded-lg px-2 sm:px-3 py-1 sm:py-2 text-white text-xs sm:text-sm flex items-center gap-1 sm:gap-2 min-h-[36px] sm:min-h-[40px]"
                       disabled={gameStatus.status === "running"}
                     >
                       {difficulty}
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
                     </Menu.Button>
                     <Transition
                       enter="transition duration-100 ease-out"
@@ -1070,7 +1264,7 @@ export default function PhishersTrap() {
                       leaveFrom="transform scale-100 opacity-100"
                       leaveTo="transform scale-95 opacity-0"
                     >
-                      <Menu.Items className="absolute right-0 mt-2 w-32 origin-top-right bg-gray-800 border border-gray-600 rounded-xl shadow-lg z-50">
+                      <Menu.Items className="absolute right-0 mt-2 w-28 sm:w-32 origin-top-right bg-gray-800 border border-gray-600 rounded-xl shadow-lg z-50">
                         <div className="p-1">
                           {['easy', 'normal', 'hard'].map((level) => (
                             <Menu.Item key={level}>
@@ -1078,7 +1272,7 @@ export default function PhishersTrap() {
                                 <button
                                   onClick={() => setDifficulty(level)}
                                   disabled={gameStatus.status === "running"}
-                                  className={`${active ? 'bg-purple-500 text-white' : 'text-gray-300'} rounded-lg px-3 py-2 text-sm w-full text-left capitalize disabled:opacity-50`}
+                                  className={`${active ? 'bg-purple-500 text-white' : 'text-gray-300'} rounded-lg px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm w-full text-left capitalize disabled:opacity-50`}
                                 >
                                   {level}
                                 </button>
@@ -1095,7 +1289,7 @@ export default function PhishersTrap() {
                     value={gameSpeed}
                     onChange={(e) => setGameSpeed(parseFloat(e.target.value))}
                     disabled={gameStatus.status === "running"}
-                    className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-400"
+                    className="bg-gray-700 border border-gray-600 rounded-lg px-2 sm:px-3 py-1 sm:py-2 text-white text-xs sm:text-sm focus:outline-none focus:border-purple-400 min-h-[36px] sm:min-h-[40px]"
                   >
                     <option value={0.5}>0.5x</option>
                     <option value={1}>1x</option>
@@ -1105,19 +1299,19 @@ export default function PhishersTrap() {
 
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
-                    className="p-2 text-gray-400 hover:text-white transition-colors"
+                    className="p-1 sm:p-2 text-gray-400 hover:text-white transition-colors"
                   >
-                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                    {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                 </div>
               </div>
 
               {/* Email List */}
-              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              <div className="space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto">
                 {emails.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <Mail className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No emails yet. Start the game to receive emails.</p>
+                  <div className="text-center py-8 sm:py-12 text-gray-500">
+                    <Mail className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm sm:text-base">No emails yet. Start the game to receive emails.</p>
                   </div>
                 ) : (
                   emails.map(email => (
@@ -1125,36 +1319,36 @@ export default function PhishersTrap() {
                       key={email.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`p-4 rounded-xl border transition-all cursor-pointer ${getEmailColor(email)}`}
+                      className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${getEmailColor(email)}`}
                       onClick={() => !email.isRead && setEmails(prev => 
                         prev.map(e => e.id === email.id ? { ...e, isRead: true } : e)
                       )}
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                           {getUrgencyIcon(email.urgency)}
-                          <div>
-                            <div className="font-semibold text-white text-sm">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-white text-sm truncate">
                               {email.sender}
                             </div>
-                            <div className="text-gray-300 text-xs">
+                            <div className="text-gray-300 text-xs truncate">
                               {email.subject}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-2">
                           {email.type === "phishing" && !email.userAction && (
-                            <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">
+                            <span className="px-1 sm:px-2 py-0.5 sm:py-1 bg-red-500/20 text-red-400 rounded text-xs">
                               Suspicious
                             </span>
                           )}
-                          <span className="text-gray-500 text-xs">
+                          <span className="text-gray-500 text-xs hidden sm:block">
                             {email.timestamp}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-gray-300 text-sm mb-3">
+                      <p className="text-gray-300 text-sm mb-3 line-clamp-2">
                         {email.body}
                       </p>
 
@@ -1165,7 +1359,7 @@ export default function PhishersTrap() {
                               e.stopPropagation();
                               handleEmailAction(email.id, "reported");
                             }}
-                            className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                            className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs font-semibold transition-all min-h-[44px] ${
                               email.userAction === "reported"
                                 ? "bg-red-500 text-white"
                                 : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
@@ -1178,7 +1372,7 @@ export default function PhishersTrap() {
                               e.stopPropagation();
                               handleEmailAction(email.id, "ignored");
                             }}
-                            className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                            className={`flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs font-semibold transition-all min-h-[44px] ${
                               email.userAction === "ignored"
                                 ? "bg-green-500 text-white"
                                 : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
@@ -1192,7 +1386,7 @@ export default function PhishersTrap() {
                       {showHints && email.indicators.length > 0 && email.type === "phishing" && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {email.indicators.map((indicator, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">
+                            <span key={idx} className="px-1 sm:px-2 py-0.5 sm:py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">
                               {indicator.replace('_', ' ')}
                             </span>
                           ))}
@@ -1204,30 +1398,30 @@ export default function PhishersTrap() {
               </div>
 
               {/* Game Controls */}
-              <div className="mt-6 pt-4 border-t border-gray-700/50">
-                <div className="flex gap-3">
+              <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-700/50">
+                <div className="flex gap-2 sm:gap-3">
                   {gameStatus.status === "idle" ? (
                     <button
                       onClick={startGame}
-                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base min-h-[44px]"
                     >
-                      <Play className="w-5 h-5" />
+                      <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                       Start Game
                     </button>
                   ) : (
                     <>
                       <button
                         onClick={pauseGame}
-                        className="flex-1 bg-yellow-500 text-white py-3 rounded-xl font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 bg-yellow-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base min-h-[44px]"
                       >
-                        {gameStatus.isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+                        {gameStatus.isPaused ? <Play className="w-4 h-4 sm:w-5 sm:h-5" /> : <Pause className="w-4 h-4 sm:w-5 sm:h-5" />}
                         {gameStatus.isPaused ? "Resume" : "Pause"}
                       </button>
                       <button
                         onClick={resetGame}
-                        className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base min-h-[44px]"
                       >
-                        <RotateCcw className="w-5 h-5" />
+                        <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
                         Reset
                       </button>
                     </>
@@ -1237,8 +1431,8 @@ export default function PhishersTrap() {
             </div>
           </div>
 
-          {/* Side Panel */}
-          <div className="lg:col-span-1 space-y-6">
+          {/* Side Panel - Hidden on mobile, shown in sidebar */}
+          <div className="hidden lg:block lg:col-span-1 space-y-6">
             {/* Stats */}
             <div className="glass card-cyber p-6 rounded-2xl border border-gray-700/50">
               <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
@@ -1332,27 +1526,27 @@ export default function PhishersTrap() {
         </div>
 
         {/* Learning Objectives */}
-        <div className="mt-8 glass card-cyber p-6 rounded-2xl border border-gray-700/50">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
+        <div className="mt-6 sm:mt-8 glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
+          <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             Learning Objectives
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
-              <h4 className="font-semibold text-purple-400 mb-2">Phishing Indicators</h4>
-              <p className="text-gray-300 text-sm">Recognize suspicious domains, urgent language, and social engineering tactics</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+              <h4 className="font-semibold text-purple-400 mb-1 sm:mb-2 text-sm sm:text-base">Phishing Indicators</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Recognize suspicious domains, urgent language, and social engineering tactics</p>
             </div>
-            <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20">
-              <h4 className="font-semibold text-green-400 mb-2">Email Analysis</h4>
-              <p className="text-gray-300 text-sm">Learn to analyze email headers, sender addresses, and content for authenticity</p>
+            <div className="p-3 sm:p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+              <h4 className="font-semibold text-green-400 mb-1 sm:mb-2 text-sm sm:text-base">Email Analysis</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Learn to analyze email headers, sender addresses, and content for authenticity</p>
             </div>
-            <div className="p-4 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
-              <h4 className="font-semibold text-yellow-400 mb-2">Social Engineering</h4>
-              <p className="text-gray-300 text-sm">Understand psychological manipulation techniques used in phishing attacks</p>
+            <div className="p-3 sm:p-4 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+              <h4 className="font-semibold text-yellow-400 mb-1 sm:mb-2 text-sm sm:text-base">Social Engineering</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Understand psychological manipulation techniques used in phishing attacks</p>
             </div>
-            <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-              <h4 className="font-semibold text-red-400 mb-2">Safe Practices</h4>
-              <p className="text-gray-300 text-sm">Develop habits for verifying email authenticity and reporting suspicious messages</p>
+            <div className="p-3 sm:p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+              <h4 className="font-semibold text-red-400 mb-1 sm:mb-2 text-sm sm:text-base">Safe Practices</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Develop habits for verifying email authenticity and reporting suspicious messages</p>
             </div>
           </div>
         </div>
@@ -1363,47 +1557,47 @@ export default function PhishersTrap() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="fixed inset-0 bg-green-500/10 backdrop-blur-sm flex items-center justify-center z-20"
+              className="fixed inset-0 bg-green-500/10 backdrop-blur-sm flex items-center justify-center z-20 p-4"
             >
-              <div className="text-center bg-gray-800/95 p-8 rounded-2xl border border-green-500/30 max-w-md mx-4 shadow-2xl">
-                <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Level Complete!</h3>
-                <p className="text-gray-300 mb-4">You successfully identified phishing emails</p>
-                <p className="text-yellow-400 text-sm mb-4">
+              <div className="text-center bg-gray-800/95 p-4 sm:p-8 rounded-2xl border border-green-500/30 max-w-md w-full shadow-2xl">
+                <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-400 mx-auto mb-3 sm:mb-4" />
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Level Complete!</h3>
+                <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">You successfully identified phishing emails</p>
+                <p className="text-yellow-400 text-xs sm:text-sm mb-3 sm:mb-4">
                   Used {usedTemplatesRef.current.size} out of {emailTemplates.length} templates
                 </p>
                 
-                <div className="bg-gray-700/80 p-4 rounded-xl border border-purple-500/30 mb-4">
+                <div className="bg-gray-700/80 p-3 sm:p-4 rounded-xl border border-purple-500/30 mb-3 sm:mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Key className="w-5 h-5 text-purple-400" />
-                      <span className="text-white font-semibold">Level 3 Password:</span>
+                      <Key className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                      <span className="text-white font-semibold text-sm sm:text-base">Level 3 Password:</span>
                     </div>
                     <button
                       onClick={copyPasswordToClipboard}
                       className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors"
                     >
-                      {passwordCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {passwordCopied ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : <Copy className="w-3 h-3 sm:w-4 sm:h-4" />}
                       <span className="text-xs">{passwordCopied ? "Copied!" : "Copy"}</span>
                     </button>
                   </div>
-                  <div className="bg-black/70 p-3 rounded border border-gray-600">
-                    <code className="text-green-400 font-mono text-sm break-all">
+                  <div className="bg-black/70 p-2 sm:p-3 rounded border border-gray-600">
+                    <code className="text-green-400 font-mono text-xs sm:text-sm break-all">
                       {levelPassword}
                     </code>
                   </div>
                 </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={resetGame}
-                    className="flex-1 bg-purple-500 text-white px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors"
+                    className="flex-1 bg-purple-500 text-white px-3 sm:px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors text-sm sm:text-base"
                   >
                     Play Again
                   </button>
                   <button
                     onClick={() => navigate("/levels")}
-                    className="flex-1 bg-cyan-500 text-white px-6 py-2 rounded-xl hover:bg-cyan-600 transition-colors"
+                    className="flex-1 bg-cyan-500 text-white px-3 sm:px-6 py-2 rounded-xl hover:bg-cyan-600 transition-colors text-sm sm:text-base"
                   >
                     Go to Levels
                   </button>
@@ -1416,23 +1610,23 @@ export default function PhishersTrap() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-20"
+              className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-20 p-4"
             >
-              <div className="text-center bg-gray-800/95 p-8 rounded-2xl border border-red-500/30 max-w-md mx-4">
-                <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Game Over!</h3>
-                <p className="text-gray-300 mb-2">
+              <div className="text-center bg-gray-800/95 p-4 sm:p-8 rounded-2xl border border-red-500/30 max-w-md w-full">
+                <XCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-400 mx-auto mb-3 sm:mb-4" />
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Game Over!</h3>
+                <p className="text-gray-300 mb-2 text-sm sm:text-base">
                   {usedTemplatesRef.current.size >= emailTemplates.length 
                     ? "All email templates exhausted - you didn't catch enough phishing emails!"
                     : "Too many phishing emails missed!"
                   }
                 </p>
-                <p className="text-yellow-400 text-sm mb-4">
+                <p className="text-yellow-400 text-xs sm:text-sm mb-3 sm:mb-4">
                   Final Score: {gameStatus.score} | Phishing Detected: {gameStatus.phishingDetected}/5
                 </p>
                 <button
                   onClick={resetGame}
-                  className="bg-purple-500 text-white px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors"
+                  className="bg-purple-500 text-white px-4 sm:px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors text-sm sm:text-base"
                 >
                   Try Again
                 </button>

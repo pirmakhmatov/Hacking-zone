@@ -12,14 +12,14 @@ import {
   Volume2, VolumeX, ChevronDown, Filter,
   Hash, Fingerprint, UserCheck, Server,
   CheckSquare, X, AlertCircle, TrendingUp,
-  ThumbsUp, ThumbsDown, Info, Lightbulb
+  ThumbsUp, ThumbsDown, Info, Lightbulb,
+  Menu
 } from "lucide-react";
 
-// FIXED: Enhanced Password Strength Meter with Detailed Feedback
+// Enhanced Password Strength Meter with Detailed Feedback
 const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
   const [analysis, setAnalysis] = useState(null);
 
-  // FIXED: Move calculation to useEffect to prevent infinite re-renders
   useEffect(() => {
     if (!password) {
       setAnalysis(null);
@@ -56,7 +56,6 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
       const uniqueChars = new Set(pass).size;
       complexityScore += Math.min(15, (uniqueChars / pass.length) * 15);
       
-      // Check for mixed case and numbers/symbols
       if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) complexityScore += 5;
       if (/\d/.test(pass) && /[^A-Za-z0-9]/.test(pass)) complexityScore += 5;
       scoreDetails.complexity = complexityScore;
@@ -69,15 +68,12 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         /letmein/i, /monkey/i, /dragon/i, /master/i, /sunshine/i
       ];
       
-      // Sequential characters penalty
       const sequential = /(abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz|012|123|234|345|456|567|678|789)/i;
       if (sequential.test(pass)) patternPenalty += 5;
       
-      // Repeated characters penalty
       const repeated = /(.)\1{2,}/;
       if (repeated.test(pass)) patternPenalty += 5;
       
-      // Common patterns penalty
       commonPatterns.forEach(pattern => {
         if (pattern.test(pass)) patternPenalty += 10;
       });
@@ -86,14 +82,13 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
       strength += scoreDetails.patterns;
 
       // Entropy bonus (max 10 points)
-      const entropy = Math.log2(Math.pow(94, pass.length)); // 94 possible characters
+      const entropy = Math.log2(Math.pow(94, pass.length));
       const entropyScore = Math.min(10, entropy / 10);
       scoreDetails.entropy = entropyScore;
       strength += entropyScore;
 
       const finalScore = Math.min(100, Math.round(strength));
       
-      // Generate detailed analysis
       const newAnalysis = {
         score: finalScore,
         details: scoreDetails,
@@ -111,7 +106,6 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         suggestions: []
       };
 
-      // Positive feedback
       if (details.length >= 25) {
         feedback.positives.push("Excellent length - very resistant to brute force attacks");
       } else if (details.length >= 15) {
@@ -128,7 +122,6 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         feedback.positives.push("High complexity - very difficult to guess");
       }
 
-      // Warning feedback
       if (password.length < 8) {
         feedback.warnings.push("Too short - easily cracked by brute force");
       }
@@ -141,7 +134,6 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         feedback.warnings.push("Contains common patterns - easily guessed by attackers");
       }
 
-      // Suggestions
       if (password.length < 12) {
         feedback.suggestions.push("Try making it at least 12 characters long");
       }
@@ -168,7 +160,7 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
     const newAnalysis = calculateStrength(password);
     setAnalysis(newAnalysis);
     onAnalysis?.(newAnalysis);
-  }, [password, requirements, onAnalysis]); // FIXED: Added dependencies
+  }, [password, requirements, onAnalysis]);
 
   const strength = analysis?.score || 0;
   
@@ -196,15 +188,15 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Strength Overview */}
-      <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-600/50">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-gray-800/50 rounded-xl p-3 sm:p-4 border border-gray-600/50">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="flex items-center gap-2">
             {getStrengthIcon(strength)}
-            <span className="text-sm font-medium text-gray-300">Password Strength</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-300">Password Strength</span>
           </div>
-          <div className={`text-lg font-bold ${
+          <div className={`text-base sm:text-lg font-bold ${
             strength < 40 ? 'text-red-400' :
             strength < 70 ? 'text-yellow-400' :
             strength < 90 ? 'text-blue-400' : 'text-green-400'
@@ -214,9 +206,9 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         </div>
         
         {/* Strength Bar */}
-        <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden mb-2">
+        <div className="w-full bg-gray-700 rounded-full h-2 sm:h-3 overflow-hidden mb-1 sm:mb-2">
           <motion.div
-            className={`h-3 rounded-full bg-gradient-to-r ${getStrengthColor(strength)}`}
+            className={`h-2 sm:h-3 rounded-full bg-gradient-to-r ${getStrengthColor(strength)}`}
             initial={{ width: 0 }}
             animate={{ width: `${strength}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -229,19 +221,18 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         </div>
       </div>
 
-
       {/* Detailed Score Breakdown */}
       {analysis && password && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-800/30 rounded-xl p-4 border border-gray-600/30"
+          className="bg-gray-800/30 rounded-xl p-3 sm:p-4 border border-gray-600/30"
         >
-          <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-cyan-400" />
+          <h4 className="text-xs sm:text-sm font-semibold text-white mb-2 sm:mb-3 flex items-center gap-2">
+            <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-400" />
             Score Breakdown
           </h4>
-          <div className="space-y-2 text-xs">
+          <div className="space-y-1 sm:space-y-2 text-xs">
             <div className="flex justify-between">
               <span className="text-gray-400">Length:</span>
               <span className="text-cyan-400">{Math.round(analysis.details.length)}/30</span>
@@ -267,12 +258,12 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
       )}
 
       {/* Requirements Checklist */}
-      <div className="space-y-3">
-        <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-          <CheckSquare className="w-4 h-4 text-green-400" />
+      <div className="space-y-2 sm:space-y-3">
+        <h4 className="text-xs sm:text-sm font-semibold text-white flex items-center gap-2">
+          <CheckSquare className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
           Security Requirements
         </h4>
-        <div className="space-y-2">
+        <div className="space-y-1 sm:space-y-2">
           {requirements.map((req, index) => {
             const isMet = req.validator(password);
             return (
@@ -281,14 +272,14 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-3 text-sm"
+                className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm"
               >
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center ${
                   isMet 
                     ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                     : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                 }`}>
-                  {isMet ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                  {isMet ? <Check className="w-2 h-2 sm:w-3 sm:h-3" /> : <X className="w-2 h-2 sm:w-3 sm:h-3" />}
                 </div>
                 <span className={isMet ? 'text-green-400' : 'text-gray-400'}>
                   {req.label}
@@ -304,14 +295,14 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="space-y-4"
+          className="space-y-3 sm:space-y-4"
         >
           {/* Positive Feedback */}
           {analysis.feedback.positives.length > 0 && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <ThumbsUp className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 text-sm font-semibold">Strengths</span>
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-2 sm:p-3">
+              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                <ThumbsUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+                <span className="text-green-400 text-xs sm:text-sm font-semibold">Strengths</span>
               </div>
               <ul className="text-green-300 text-xs space-y-1">
                 {analysis.feedback.positives.map((positive, index) => (
@@ -323,10 +314,10 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
 
           {/* Warning Feedback */}
           {analysis.feedback.warnings.length > 0 && (
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                <span className="text-yellow-400 text-sm font-semibold">Areas for Improvement</span>
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 sm:p-3">
+              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
+                <span className="text-yellow-400 text-xs sm:text-sm font-semibold">Areas for Improvement</span>
               </div>
               <ul className="text-yellow-300 text-xs space-y-1">
                 {analysis.feedback.warnings.map((warning, index) => (
@@ -338,10 +329,10 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
 
           {/* Suggestions */}
           {analysis.feedback.suggestions.length > 0 && (
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-4 h-4 text-blue-400" />
-                <span className="text-blue-400 text-sm font-semibold">Suggestions</span>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 sm:p-3">
+              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
+                <span className="text-blue-400 text-xs sm:text-sm font-semibold">Suggestions</span>
               </div>
               <ul className="text-blue-300 text-xs space-y-1">
                 {analysis.feedback.suggestions.map((suggestion, index) => (
@@ -352,7 +343,7 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
           )}
 
           {/* Security Assessment */}
-          <div className={`rounded-lg p-3 border ${
+          <div className={`rounded-lg p-2 sm:p-3 border ${
             analysis.score >= 80 
               ? 'bg-green-500/10 border-green-500/30' 
               : analysis.score >= 60
@@ -360,11 +351,11 @@ const PasswordStrengthMeter = ({ password, requirements, onAnalysis }) => {
               : 'bg-red-500/10 border-red-500/30'
           }`}>
             <div className="flex items-center gap-2">
-              <Shield className={`w-4 h-4 ${
+              <Shield className={`w-3 h-3 sm:w-4 sm:h-4 ${
                 analysis.score >= 80 ? 'text-green-400' :
                 analysis.score >= 60 ? 'text-blue-400' : 'text-red-400'
               }`} />
-              <span className={`text-sm font-semibold ${
+              <span className={`text-xs sm:text-sm font-semibold ${
                 analysis.score >= 80 ? 'text-green-400' :
                 analysis.score >= 60 ? 'text-blue-400' : 'text-red-400'
               }`}>
@@ -402,23 +393,19 @@ const PasswordCreationPhase = ({
   const [analysis, setAnalysis] = useState(null);
   const [customPassword, setCustomPassword] = useState("");
 
-  // FIXED: Proper validation that checks ALL requirements
   const validatePassword = (pass, confirm) => {
     const newErrors = [];
     
-    // Check ALL requirements - FIXED: This now properly validates each rule
     requirements.forEach(req => {
       if (!req.validator(pass)) {
         newErrors.push(`Failed: ${req.description}`);
       }
     });
 
-    // Check confirmation
     if (pass && confirm && pass !== confirm) {
       newErrors.push("Passwords do not match");
     }
 
-    // Check minimum strength
     if (analysis && analysis.score < 70) {
       newErrors.push("Password strength too low (minimum 70% required)");
     }
@@ -435,7 +422,6 @@ const PasswordCreationPhase = ({
     const validationErrors = validatePassword(password, confirmPassword);
     setErrors(validationErrors);
 
-    // FIXED: Only submit if NO errors AND meets strength requirement
     if (validationErrors.length === 0 && analysis && analysis.score >= 70) {
       onPasswordSubmit(password);
     }
@@ -451,19 +437,16 @@ const PasswordCreationPhase = ({
 
     let generated = '';
     
-    // Ensure at least one of each type
     generated += chars.uppercase[Math.floor(Math.random() * chars.uppercase.length)];
     generated += chars.lowercase[Math.floor(Math.random() * chars.lowercase.length)];
     generated += chars.numbers[Math.floor(Math.random() * chars.numbers.length)];
     generated += chars.symbols[Math.floor(Math.random() * chars.symbols.length)];
     
-    // Fill remaining length
     const allChars = chars.uppercase + chars.lowercase + chars.numbers + chars.symbols;
     for (let i = generated.length; i < 16; i++) {
       generated += allChars[Math.floor(Math.random() * allChars.length)];
     }
     
-    // Shuffle the password
     generated = generated.split('').sort(() => Math.random() - 0.5).join('');
     
     setPassword(generated);
@@ -481,23 +464,23 @@ const PasswordCreationPhase = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="glass card-cyber p-6 rounded-2xl border border-cyan-500/30"
+      className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-cyan-500/30"
     >
-      <div className="text-center mb-6">
-        <Key className="w-12 h-12 text-cyan-400 mx-auto mb-3" />
-        <h3 className="text-2xl font-bold text-white mb-2">Create Secure Password</h3>
-        <p className="text-gray-400">
+      <div className="text-center mb-4 sm:mb-6">
+        <Key className="w-8 h-8 sm:w-12 sm:h-12 text-cyan-400 mx-auto mb-2 sm:mb-3" />
+        <h3 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">Create Secure Password</h3>
+        <p className="text-gray-400 text-sm sm:text-base">
           Now enter your own password that meets all the security requirements
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Password Input Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {/* Test Your Own Password */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-purple-400" />
+          <div className="space-y-2 sm:space-y-3">
+            <h4 className="text-xs sm:text-sm font-semibold text-white flex items-center gap-2">
+              <UserCheck className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
               Enter Your Password
             </h4>
             <input
@@ -505,7 +488,7 @@ const PasswordCreationPhase = ({
               value={customPassword}
               onChange={(e) => handleCustomPassword(e.target.value)}
               placeholder="Enter your password that meets all requirements"
-              className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-sm"
+              className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-sm"
             />
             <p className="text-gray-400 text-xs">
               Create a password that meets all the security rules you selected
@@ -513,14 +496,14 @@ const PasswordCreationPhase = ({
           </div>
 
           {/* Generate Strong Password */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
+          <div className="space-y-2 sm:space-y-3">
+            <h4 className="text-xs sm:text-sm font-semibold text-white flex items-center gap-2">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
               Generate Strong Password
             </h4>
             <button
               onClick={generateStrongPassword}
-              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-yellow-500/20 transition-all text-sm"
+              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-yellow-500/20 transition-all text-sm"
             >
               Generate Secure Password
             </button>
@@ -542,11 +525,11 @@ const PasswordCreationPhase = ({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className="space-y-4"
+            className="space-y-3 sm:space-y-4"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -554,7 +537,7 @@ const PasswordCreationPhase = ({
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 pr-12 text-sm"
+                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 pr-10 text-sm"
                   />
                   <button
                     type="button"
@@ -567,7 +550,7 @@ const PasswordCreationPhase = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                   Confirm Password
                 </label>
                 <input
@@ -577,7 +560,7 @@ const PasswordCreationPhase = ({
                     setConfirmPassword(e.target.value);
                     setErrors(validatePassword(password, e.target.value));
                   }}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 text-sm"
+                  className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-400 text-sm"
                 />
               </div>
             </div>
@@ -587,13 +570,13 @@ const PasswordCreationPhase = ({
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="bg-red-500/10 border border-red-500/30 rounded-lg p-4"
+                className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 sm:p-4"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-5 h-5 text-red-400" />
-                  <span className="text-red-400 font-semibold">Issues to fix:</span>
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                  <span className="text-red-400 font-semibold text-sm sm:text-base">Issues to fix:</span>
                 </div>
-                <ul className="text-red-300 text-sm space-y-1">
+                <ul className="text-red-300 text-xs sm:text-sm space-y-1">
                   {errors.map((error, index) => (
                     <li key={index}>• {error}</li>
                   ))}
@@ -606,13 +589,13 @@ const PasswordCreationPhase = ({
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-green-500/10 border border-green-500/30 rounded-lg p-4"
+                className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 sm:p-4"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <span className="text-green-400 font-semibold">Perfect! Ready to Secure!</span>
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                  <span className="text-green-400 font-semibold text-sm sm:text-base">Perfect! Ready to Secure!</span>
                 </div>
-                <p className="text-green-300 text-sm">
+                <p className="text-green-300 text-xs sm:text-sm">
                   Your password meets all security requirements and is ready to use.
                 </p>
               </motion.div>
@@ -621,29 +604,29 @@ const PasswordCreationPhase = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-4 border-t border-gray-700/50">
+        <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-700/50">
           <button
             onClick={onBack}
-            className="flex-1 bg-gray-600 text-white py-3 rounded-xl font-semibold hover:bg-gray-700 transition-colors text-sm"
+            className="flex-1 bg-gray-600 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-gray-700 transition-colors text-xs sm:text-sm"
           >
             Back to Defense
           </button>
           <button
             onClick={handleSubmit}
             disabled={errors.length > 0 || !password || !confirmPassword || (analysis && analysis.score < 70)}
-            className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
           >
             {analysis && analysis.score >= 70 ? "Complete Level" : "Fix Issues First"}
           </button>
         </div>
 
         {/* Security Tips */}
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-600/50">
-          <h4 className="text-green-400 font-semibold mb-3 flex items-center gap-2">
-            <Info className="w-4 h-4" />
+        <div className="bg-gray-800/50 rounded-lg p-3 sm:p-4 border border-gray-600/50">
+          <h4 className="text-green-400 font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
+            <Info className="w-3 h-3 sm:w-4 sm:h-4" />
             Password Security Tips
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-300">
+          <div className="grid grid-cols-1 gap-1 sm:gap-2 text-xs text-gray-300">
             <div className="space-y-1">
               <p className="flex items-center gap-1">
                 <Check className="w-3 h-3 text-green-400" />
@@ -676,22 +659,22 @@ const PasswordCreationPhase = ({
         </div>
 
         {/* Password Examples */}
-        <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
-          <h4 className="text-blue-400 font-semibold mb-2 flex items-center gap-2">
-            <Lightbulb className="w-4 h-4" />
+        <div className="bg-blue-500/10 rounded-lg p-3 sm:p-4 border border-blue-500/30">
+          <h4 className="text-blue-400 font-semibold text-xs sm:text-sm mb-1 sm:mb-2 flex items-center gap-2">
+            <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4" />
             Strong Password Examples
           </h4>
-          <div className="space-y-2 text-xs">
+          <div className="space-y-1 sm:space-y-2 text-xs">
             <div className="flex justify-between items-center">
-              <code className="text-blue-300 font-mono">Blu3$ky!Mountain@2024</code>
+              <code className="text-blue-300 font-mono text-xs">Blu3$ky!Mountain@2024</code>
               <span className="text-green-400 text-xs">95%</span>
             </div>
             <div className="flex justify-between items-center">
-              <code className="text-blue-300 font-mono">T3mp3r@tur3*F0rest</code>
+              <code className="text-blue-300 font-mono text-xs">T3mp3r@tur3*F0rest</code>
               <span className="text-green-400 text-xs">92%</span>
             </div>
             <div className="flex justify-between items-center">
-              <code className="text-blue-300 font-mono">R@inb0w#Drag0n$Fly</code>
+              <code className="text-blue-300 font-mono text-xs">R@inb0w#Drag0n$Fly</code>
               <span className="text-blue-400 text-xs">88%</span>
             </div>
           </div>
@@ -715,7 +698,7 @@ export default function PasswordVault() {
     level: 3,
     isPaused: false,
     lives: 3,
-    phase: "cracking" // cracking, defense, or creation
+    phase: "cracking"
   });
 
   const [passwordInput, setPasswordInput] = useState("");
@@ -725,6 +708,7 @@ export default function PasswordVault() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [userCreatedPassword, setUserCreatedPassword] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Password cracking phase
   const [currentHash, setCurrentHash] = useState("");
@@ -938,7 +922,6 @@ export default function PasswordVault() {
     const availablePasswords = passwordDatabase.filter(p => !usedPasswords.has(p.password));
     
     if (availablePasswords.length === 0) {
-      // All passwords used, switch to defense phase
       if (gameStatus.passwordsCracked >= 3) {
         setGameStatus(prev => ({ ...prev, phase: "defense" }));
         addGameLog("🎯 Phase 2: Build password defenses against brute force attacks", "info");
@@ -964,11 +947,8 @@ export default function PasswordVault() {
 
   // Start defense phase
   const startDefensePhase = () => {
-    // Initialize defense rules
     setDefenseRules(rules => rules.map(rule => ({ ...rule, enabled: false })));
     setPasswordStrength(0);
-
-    // Start brute force attacks
     startBruteForceAttacks();
   };
 
@@ -1014,7 +994,6 @@ export default function PasswordVault() {
           const newProgress = attack.progress + (speedMultiplier * defenseMultiplier);
 
           if (newProgress >= 100) {
-            // Attack successful
             setGameStatus(prevStatus => {
               const newLives = prevStatus.lives - 1;
               if (newLives <= 0) {
@@ -1043,7 +1022,6 @@ export default function PasswordVault() {
     setCrackingAttempts(prev => prev + 1);
 
     if (attempt.toLowerCase() === currentPassword.password.toLowerCase()) {
-      // Successfully cracked
       setGameStatus(prev => ({
         ...prev,
         passwordsCracked: prev.passwordsCracked + 1,
@@ -1062,7 +1040,6 @@ export default function PasswordVault() {
         setTimeout(startNewCrackingChallenge, 1000);
       }
     } else {
-      // Failed attempt
       setGameStatus(prev => ({
         ...prev,
         score: Math.max(0, prev.score - 5)
@@ -1070,7 +1047,6 @@ export default function PasswordVault() {
       addGameLog(`❌ Failed attempt: "${attempt}"`, "error");
       playSound(300, 0.2, 'square');
 
-      // Update progress based on similarity
       const similarity = calculateSimilarity(attempt, currentPassword.password);
       setCrackingProgress(Math.min(100, crackingProgress + similarity));
     }
@@ -1080,11 +1056,9 @@ export default function PasswordVault() {
   const calculateSimilarity = (attempt, actual) => {
     let similarity = 0;
     
-    // Length similarity
     const lengthDiff = Math.abs(attempt.length - actual.length);
     similarity += Math.max(0, 10 - lengthDiff);
     
-    // Character type similarity
     const hasUpper = /[A-Z]/.test(attempt) === /[A-Z]/.test(actual);
     const hasLower = /[a-z]/.test(attempt) === /[a-z]/.test(actual);
     const hasNumbers = /\d/.test(attempt) === /\d/.test(actual);
@@ -1117,13 +1091,12 @@ export default function PasswordVault() {
     }
   }, [defenseRules, gameStatus.phase]);
 
-  // FIXED: Check when ALL defense rules are enabled - NO DELAY
+  // Check when ALL defense rules are enabled
   useEffect(() => {
     if (gameStatus.phase === "defense" && gameStatus.status === "running") {
       const allRulesEnabled = defenseRules.every(rule => rule.enabled);
       
       if (allRulesEnabled) {
-        // FIXED: Remove the delay - move immediately to password creation
         setGameStatus(prev => ({ ...prev, phase: "creation" }));
         addGameLog("🎉 All security rules enabled! Now create your own secure password", "success");
         addGameLog("🔐 Enter a password that meets ALL the requirements you selected", "info");
@@ -1137,7 +1110,6 @@ export default function PasswordVault() {
     addGameLog("🎉 Secure password created successfully!", "success");
     addGameLog(`🔐 Your password meets all security requirements`, "success");
     
-    // Complete the level
     completeLevel();
   };
 
@@ -1176,6 +1148,7 @@ export default function PasswordVault() {
     setUsedPasswords(new Set());
     setUserCreatedPassword("");
     setShowTutorial(false);
+    setMobileMenuOpen(false);
     
     addGameLog("🔓 Game started! Crack 3 passwords to advance to defense phase", "info");
     startNewCrackingChallenge();
@@ -1206,6 +1179,7 @@ export default function PasswordVault() {
     setCurrentHash("");
     setCrackingProgress(0);
     setCrackingAttempts(0);
+    setMobileMenuOpen(false);
   };
 
   const handleGameOver = (reason = "Vault breached") => {
@@ -1254,14 +1228,14 @@ export default function PasswordVault() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md w-full">
           <Shield className="w-16 h-16 text-purple-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
-          <p className="text-gray-400 mb-4">Please log in to play this game</p>
+          <p className="text-gray-400 mb-6">Please log in to play this game</p>
           <button
             onClick={() => navigate("/login")}
-            className="bg-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors"
+            className="w-full bg-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors"
           >
             Go to Login
           </button>
@@ -1272,17 +1246,17 @@ export default function PasswordVault() {
 
   if (gameStatus.status === "locked") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-8 px-4 pt-24">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-4 sm:py-8 px-3 sm:px-4 pt-20 sm:pt-24">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="glass card-cyber p-8 rounded-2xl border border-purple-500/30">
-            <Key className="w-16 h-16 text-purple-400 mx-auto mb-6" />
-            <h1 className="text-4xl font-bold text-white mb-4">Password Vault</h1>
-            <p className="text-gray-300 mb-6 text-lg">Level 3: Password Security & Brute Force Defense</p>
+          <div className="glass card-cyber p-4 sm:p-8 rounded-2xl border border-purple-500/30">
+            <Key className="w-12 h-12 sm:w-16 sm:h-16 text-purple-400 mx-auto mb-4 sm:mb-6" />
+            <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">Password Vault</h1>
+            <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-lg">Level 3: Password Security & Brute Force Defense</p>
             
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-6 mb-6">
-              <Key className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-              <h3 className="text-white font-semibold mb-2">Level 3 Password Required</h3>
-              <p className="text-gray-300 text-sm mb-4">
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+              <Key className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mx-auto mb-2 sm:mb-3" />
+              <h3 className="text-white font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Level 3 Password Required</h3>
+              <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">
                 Enter the password from Phisher's Trap level
               </p>
               
@@ -1295,27 +1269,27 @@ export default function PasswordVault() {
                     setPasswordError("");
                   }}
                   placeholder="Enter Level 3 Password (HZ-L3-...)"
-                  className="w-full bg-black/50 border border-purple-500/50 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-center font-mono"
+                  className="w-full bg-black/50 border border-purple-500/50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-center font-mono text-sm sm:text-base"
                   onKeyPress={(e) => e.key === 'Enter' && checkLevelPassword()}
                 />
                 {passwordError && (
-                  <p className="text-red-400 text-sm mt-2">{passwordError}</p>
+                  <p className="text-red-400 text-xs sm:text-sm mt-2">{passwordError}</p>
                 )}
                 <button
                   onClick={checkLevelPassword}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold mt-4 hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 sm:py-3 rounded-xl font-semibold mt-3 sm:mt-4 hover:shadow-lg hover:shadow-purple-500/20 transition-all text-sm sm:text-base"
                 >
                   Unlock Level 3
                 </button>
               </div>
             </div>
 
-            <div className="text-left bg-gray-800/30 rounded-xl p-4">
-              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-yellow-400" />
+            <div className="text-left bg-gray-800/30 rounded-xl p-3 sm:p-4">
+              <h4 className="text-white font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                 What to Expect:
               </h4>
-              <ul className="text-gray-300 text-sm space-y-2">
+              <ul className="text-gray-300 text-xs sm:text-sm space-y-1 sm:space-y-2">
                 <li>• Phase 1: Crack password hashes using hints and analysis</li>
                 <li>• Phase 2: Build strong password defenses against brute force attacks</li>
                 <li>• Phase 3: Create your own secure password meeting all requirements</li>
@@ -1330,7 +1304,57 @@ export default function PasswordVault() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-8 px-4 pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-black py-4 sm:py-8 px-3 sm:px-4 pt-20 sm:pt-24">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 p-3 sm:p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => navigate("/levels")}
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+            <Key className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-white">Password Vault</h1>
+              <p className="text-purple-400 text-xs">Level 3</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Mobile Stats */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="text-center">
+                <div className="text-purple-400 font-bold">{gameStatus.score}</div>
+                <div className="text-gray-400">Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-green-400 font-bold">
+                  {gameStatus.phase === "cracking" 
+                    ? `${gameStatus.passwordsCracked}/3` 
+                    : gameStatus.phase === "defense"
+                    ? `${defenseRules.filter(r => r.enabled).length}/${defenseRules.length}`
+                    : "Creation"
+                  }
+                </div>
+                <div className="text-gray-400">
+                  {gameStatus.phase === "cracking" ? "Cracked" : 
+                   gameStatus.phase === "defense" ? "Rules" : "Phase"}
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-1 sm:p-2 text-gray-400 hover:text-white"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 opacity-10">
           {[...Array(10)].map((_, i) => (
@@ -1348,8 +1372,8 @@ export default function PasswordVault() {
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        {/* Desktop Header */}
+        <div className="hidden lg:flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/levels")}
@@ -1402,47 +1426,119 @@ export default function PasswordVault() {
           </div>
         </div>
 
-        {/* Tutorial */}
+        {/* Mobile Sidebar Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: 300 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 300 }}
+              className="lg:hidden fixed top-16 right-0 bottom-0 w-80 bg-gray-900/95 backdrop-blur-sm border-l border-gray-700 z-20 p-4 overflow-y-auto"
+            >
+              {/* Game Stats */}
+              <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50 mb-4">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-yellow-400" />
+                  Game Stats
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Score:</span>
+                    <span className="text-purple-400">{gameStatus.score}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Passwords Cracked:</span>
+                    <span className="text-green-400">{gameStatus.passwordsCracked}/3</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Defense Strength:</span>
+                    <span className="text-blue-400">{passwordStrength}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Active Rules:</span>
+                    <span className="text-purple-400">
+                      {defenseRules.filter(r => r.enabled).length}/{defenseRules.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Lives:</span>
+                    <span className="text-red-400">{gameStatus.lives}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Game Log */}
+              <div className="glass card-cyber p-4 rounded-2xl border border-gray-700/50">
+                <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                  <Terminal className="w-5 h-5" />
+                  Security Log
+                </h3>
+                <div className="bg-gray-800/50 rounded-xl p-3 max-h-48 overflow-y-auto">
+                  {gameLog.length === 0 ? (
+                    <p className="text-gray-500 text-sm italic">No activity yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {gameLog.map(log => (
+                        <div key={log.id} className="flex items-start gap-2 text-xs">
+                          <span className="text-gray-500 text-xs mt-0.5 flex-shrink-0">{log.timestamp}</span>
+                          <span className={`flex-1 ${
+                            log.type === "error" ? "text-red-400" :
+                            log.type === "warning" ? "text-yellow-400" :
+                            log.type === "success" ? "text-green-400" : "text-gray-300"
+                          }`}>
+                            {log.message}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tutorial Overlay */}
         <AnimatePresence>
           {showTutorial && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="glass card-cyber p-8 max-w-2xl mx-4 border border-purple-500/30 rounded-2xl"
+                className="glass card-cyber p-4 sm:p-6 max-w-2xl w-full border border-purple-500/30 rounded-2xl"
               >
-                <h2 className="text-3xl font-bold text-white mb-4 text-center">Welcome to Password Vault</h2>
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <Hash className="w-6 h-6 text-purple-400 mt-1" />
+                <h2 className="text-xl sm:text-3xl font-bold text-white mb-4 text-center">Welcome to Password Vault</h2>
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Hash className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="text-white font-semibold">Phase 1: Password Cracking</h3>
-                      <p className="text-gray-400">Crack 3 password hashes using hints and analysis</p>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Phase 1: Password Cracking</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Crack 3 password hashes using hints and analysis</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-6 h-6 text-green-400 mt-1" />
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-green-400 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="text-white font-semibold">Phase 2: Defense Building</h3>
-                      <p className="text-gray-400">Enable ALL password defense rules to proceed</p>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Phase 2: Defense Building</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Enable ALL password defense rules to proceed</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Key className="w-6 h-6 text-cyan-400 mt-1" />
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <Key className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 mt-1 flex-shrink-0" />
                     <div>
-                      <h3 className="text-white font-semibold">Phase 3: Password Creation</h3>
-                      <p className="text-gray-400">Create your own secure password meeting all requirements</p>
+                      <h3 className="text-white font-semibold text-sm sm:text-base">Phase 3: Password Creation</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm">Create your own secure password meeting all requirements</p>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowTutorial(false)}
-                  className="w-full bg-purple-500 text-white py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors"
+                  className="w-full bg-purple-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-purple-600 transition-colors text-sm sm:text-base"
                 >
                   Start Game
                 </button>
@@ -1451,49 +1547,49 @@ export default function PasswordVault() {
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Main Game Area */}
           <div className="lg:col-span-2">
-            <div className="glass card-cyber p-6 rounded-2xl border border-gray-700/50 h-full">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  {gameStatus.phase === "cracking" ? <Hash className="w-5 h-5" /> : 
-                   gameStatus.phase === "defense" ? <Shield className="w-5 h-5" /> :
-                   <Key className="w-5 h-5" />}
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50 h-full">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  {gameStatus.phase === "cracking" ? <Hash className="w-4 h-4 sm:w-5 sm:h-5" /> : 
+                   gameStatus.phase === "defense" ? <Shield className="w-4 h-4 sm:w-5 sm:h-5" /> :
+                   <Key className="w-4 h-4 sm:w-5 sm:h-5" />}
                   {gameStatus.phase === "cracking" ? "Password Cracking" : 
                    gameStatus.phase === "defense" ? "Vault Defense" : "Password Creation"}
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSoundEnabled(!soundEnabled)}
-                    className="p-2 text-gray-400 hover:text-white transition-colors"
+                    className="p-1 sm:p-2 text-gray-400 hover:text-white transition-colors"
                   >
-                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                    {soundEnabled ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                 </div>
               </div>
 
               {/* Game Content */}
               {gameStatus.phase === "cracking" ? (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Current Hash */}
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-                    <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                      <Hash className="w-5 h-5" />
+                  <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-purple-500/30">
+                    <h3 className="text-white font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <Hash className="w-4 h-4 sm:w-5 sm:h-5" />
                       Crack This Hash
                     </h3>
-                    <div className="bg-black/70 p-4 rounded border border-gray-600 mb-4">
-                      <code className="text-green-400 font-mono text-sm break-all">
+                    <div className="bg-black/70 p-3 sm:p-4 rounded border border-gray-600 mb-3 sm:mb-4">
+                      <code className="text-green-400 font-mono text-xs sm:text-sm break-all">
                         {currentHash}
                       </code>
                     </div>
-                    <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
+                    <div className="flex items-center justify-between text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">
                       <span>Type: {hashType.toUpperCase()}</span>
                       <span>Attempts: {crackingAttempts}</span>
                     </div>
                     
                     {/* Progress Bar */}
-                    <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                    <div className="w-full bg-gray-700 rounded-full h-2 mb-3 sm:mb-4">
                       <div 
                         className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
                         style={{ width: `${crackingProgress}%` }}
@@ -1501,10 +1597,10 @@ export default function PasswordVault() {
                     </div>
 
                     {/* Hints */}
-                    <div className="space-y-2">
-                      <h4 className="text-yellow-400 text-sm font-semibold">Hints:</h4>
+                    <div className="space-y-1 sm:space-y-2">
+                      <h4 className="text-yellow-400 text-xs sm:text-sm font-semibold">Hints:</h4>
                       {hints.map((hint, index) => (
-                        <div key={index} className="flex items-center gap-2 text-gray-300 text-sm">
+                        <div key={index} className="flex items-center gap-2 text-gray-300 text-xs sm:text-sm">
                           <Sparkles className="w-3 h-3 text-yellow-400" />
                           {hint}
                         </div>
@@ -1513,11 +1609,11 @@ export default function PasswordVault() {
                   </div>
 
                   {/* Password Input */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <input
                       type="text"
                       placeholder="Enter your password guess..."
-                      className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400"
+                      className="w-full bg-gray-800 border border-gray-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 text-sm"
                       onKeyPress={(e) => e.key === 'Enter' && attemptCrack(e.target.value)}
                     />
                     <button
@@ -1528,20 +1624,20 @@ export default function PasswordVault() {
                           input.value = '';
                         }
                       }}
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition-all text-sm sm:text-base"
                     >
                       Attempt Crack
                     </button>
                   </div>
                 </div>
               ) : gameStatus.phase === "defense" ? (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Defense Rules */}
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-green-500/30">
-                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                      <Shield className="w-5 h-5" />
+                  <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-green-500/30">
+                    <h3 className="text-white font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                      <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
                       Password Defense Rules
-                      <span className="text-sm text-gray-400">
+                      <span className="text-xs sm:text-sm text-gray-400">
                         ({defenseRules.filter(r => r.enabled).length}/{defenseRules.length} enabled)
                       </span>
                     </h3>
@@ -1551,45 +1647,45 @@ export default function PasswordVault() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4"
+                        className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4"
                       >
                         <div className="flex items-center gap-2 text-green-400">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-semibold">Perfect! All 7 security rules enabled!</span>
+                          <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span className="font-semibold text-sm sm:text-base">Perfect! All 7 security rules enabled!</span>
                         </div>
-                        <p className="text-green-300 text-sm mt-1">
+                        <p className="text-green-300 text-xs sm:text-sm mt-1">
                           <strong>Next:</strong> Create a password that meets ALL these requirements
                         </p>
                         <button
                           onClick={() => {
                             setGameStatus(prev => ({ ...prev, phase: "creation" }));
                           }}
-                          className="mt-2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-600 transition-colors"
+                          className="mt-2 bg-green-500 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-green-600 transition-colors"
                         >
                           Proceed to Password Creation →
                         </button>
                       </motion.div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-2 sm:gap-3">
                       {defenseRules.map(rule => (
                         <motion.div
                           key={rule.id}
                           whileHover={{ scale: 1.02 }}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          className={`p-2 sm:p-3 rounded-lg border cursor-pointer transition-all ${
                             rule.enabled
                               ? "bg-green-500/10 border-green-500/30"
                               : "bg-gray-700/50 border-gray-600/50"
                           }`}
                           onClick={() => toggleDefenseRule(rule.id)}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             <div className={`w-3 h-3 rounded-full border ${
                               rule.enabled 
                                 ? "bg-green-400 border-green-500" 
                                 : "bg-gray-600 border-gray-500"
                             }`} />
-                            <span className={`text-sm ${rule.enabled ? "text-white" : "text-gray-400"}`}>
+                            <span className={`text-xs sm:text-sm ${rule.enabled ? "text-white" : "text-gray-400"}`}>
                               {rule.description}
                             </span>
                           </div>
@@ -1599,18 +1695,18 @@ export default function PasswordVault() {
                   </div>
 
                   {/* Defense Strength */}
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-blue-500/30">
-                    <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                      <UserCheck className="w-5 h-5" />
+                  <div className="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-blue-500/30">
+                    <h3 className="text-white font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+                      <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                       Defense Strength
                     </h3>
-                    <div className="w-full bg-gray-700 rounded-full h-4 mb-2">
+                    <div className="w-full bg-gray-700 rounded-full h-3 sm:h-4 mb-1 sm:mb-2">
                       <div 
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-4 rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 sm:h-4 rounded-full transition-all duration-500"
                         style={{ width: `${passwordStrength}%` }}
                       ></div>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-gray-400">Weak</span>
                       <span className="text-blue-400 font-semibold">{passwordStrength}%</span>
                       <span className="text-gray-400">Strong</span>
@@ -1618,19 +1714,19 @@ export default function PasswordVault() {
                   </div>
 
                   {/* Active Attacks */}
-                  <div className="space-y-3">
-                    <h3 className="text-white font-semibold flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <div className="space-y-2 sm:space-y-3">
+                    <h3 className="text-white font-semibold flex items-center gap-2 text-sm sm:text-base">
+                      <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                       Active Attacks
                     </h3>
                     {bruteForceAttacks.length === 0 ? (
-                      <p className="text-gray-500 text-sm italic">No active attacks</p>
+                      <p className="text-gray-500 text-xs sm:text-sm italic">No active attacks</p>
                     ) : (
                       bruteForceAttacks.map(attack => (
-                        <div key={attack.id} className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-white font-semibold capitalize">{attack.type} Attack</span>
-                            <span className="text-red-400 text-sm">{attack.strength}</span>
+                        <div key={attack.id} className="bg-red-500/10 border border-red-500/30 rounded-lg p-2 sm:p-3">
+                          <div className="flex items-center justify-between mb-1 sm:mb-2">
+                            <span className="text-white font-semibold text-xs sm:text-sm capitalize">{attack.type} Attack</span>
+                            <span className="text-red-400 text-xs sm:text-sm">{attack.strength}</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
                             <div 
@@ -1653,30 +1749,30 @@ export default function PasswordVault() {
 
               {/* Game Controls */}
               {gameStatus.phase !== "creation" && (
-                <div className="mt-6 pt-4 border-t border-gray-700/50">
-                  <div className="flex gap-3">
+                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-700/50">
+                  <div className="flex gap-2 sm:gap-3">
                     {gameStatus.status === "idle" ? (
                       <button
                         onClick={startGame}
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition-all flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
                       >
-                        <Play className="w-5 h-5" />
+                        <Play className="w-4 h-4 sm:w-5 sm:h-5" />
                         Start Game
                       </button>
                     ) : (
                       <>
                         <button
                           onClick={pauseGame}
-                          className="flex-1 bg-yellow-500 text-white py-3 rounded-xl font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-yellow-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-yellow-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
                         >
-                          {gameStatus.isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+                          {gameStatus.isPaused ? <Play className="w-4 h-4 sm:w-5 sm:h-5" /> : <Pause className="w-4 h-4 sm:w-5 sm:h-5" />}
                           {gameStatus.isPaused ? "Resume" : "Pause"}
                         </button>
                         <button
                           onClick={resetGame}
-                          className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 bg-red-500 text-white py-2 sm:py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
                         >
-                          <RotateCcw className="w-5 h-5" />
+                          <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
                           Reset
                         </button>
                       </>
@@ -1687,10 +1783,10 @@ export default function PasswordVault() {
             </div>
           </div>
 
-          {/* Side Panel */}
-          <div className="lg:col-span-1 space-y-6">
+          {/* Side Panel - Hidden on mobile, shown in sidebar */}
+          <div className="hidden lg:block lg:col-span-1 space-y-4 sm:space-y-6">
             {/* Stats */}
-            <div className="glass card-cyber p-6 rounded-2xl border border-gray-700/50">
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
               <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <Award className="w-5 h-5 text-yellow-400" />
                 Game Stats
@@ -1720,7 +1816,7 @@ export default function PasswordVault() {
             </div>
 
             {/* Game Log */}
-            <div className="glass card-cyber p-6 rounded-2xl border border-gray-700/50">
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
               <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <Terminal className="w-5 h-5" />
                 Security Log
@@ -1748,7 +1844,7 @@ export default function PasswordVault() {
             </div>
 
             {/* Learning Tips */}
-            <div className="glass card-cyber p-6 rounded-2xl border border-gray-700/50">
+            <div className="glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
               <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-yellow-400" />
                 Tips
@@ -1767,27 +1863,27 @@ export default function PasswordVault() {
         </div>
 
         {/* Learning Objectives */}
-        <div className="mt-8 glass card-cyber p-6 rounded-2xl border border-gray-700/50">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
+        <div className="mt-6 sm:mt-8 glass card-cyber p-4 sm:p-6 rounded-2xl border border-gray-700/50">
+          <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
             Learning Objectives
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
-              <h4 className="font-semibold text-purple-400 mb-2">Hash Cracking</h4>
-              <p className="text-gray-300 text-sm">Understand how password hashes work and cracking techniques</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-purple-500/10 rounded-xl border border-purple-500/20">
+              <h4 className="font-semibold text-purple-400 mb-1 sm:mb-2 text-sm sm:text-base">Hash Cracking</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Understand how password hashes work and cracking techniques</p>
             </div>
-            <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/20">
-              <h4 className="font-semibold text-green-400 mb-2">Password Strength</h4>
-              <p className="text-gray-300 text-sm">Learn what makes passwords strong and resistant to attacks</p>
+            <div className="p-3 sm:p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+              <h4 className="font-semibold text-green-400 mb-1 sm:mb-2 text-sm sm:text-base">Password Strength</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Learn what makes passwords strong and resistant to attacks</p>
             </div>
-            <div className="p-4 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
-              <h4 className="font-semibold text-yellow-400 mb-2">Brute Force Defense</h4>
-              <p className="text-gray-300 text-sm">Understand different attack types and defense strategies</p>
+            <div className="p-3 sm:p-4 bg-yellow-500/10 rounded-xl border border-yellow-500/20">
+              <h4 className="font-semibold text-yellow-400 mb-1 sm:mb-2 text-sm sm:text-base">Brute Force Defense</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Understand different attack types and defense strategies</p>
             </div>
-            <div className="p-4 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
-              <h4 className="font-semibold text-cyan-400 mb-2">Secure Creation</h4>
-              <p className="text-gray-300 text-sm">Apply knowledge to create strong, secure passwords</p>
+            <div className="p-3 sm:p-4 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+              <h4 className="font-semibold text-cyan-400 mb-1 sm:mb-2 text-sm sm:text-base">Secure Creation</h4>
+              <p className="text-gray-300 text-xs sm:text-sm">Apply knowledge to create strong, secure passwords</p>
             </div>
           </div>
         </div>
@@ -1798,21 +1894,21 @@ export default function PasswordVault() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="fixed inset-0 bg-green-500/10 backdrop-blur-sm flex items-center justify-center z-20"
+              className="fixed inset-0 bg-green-500/10 backdrop-blur-sm flex items-center justify-center z-20 p-4"
             >
-              <div className="text-center bg-gray-800/95 p-8 rounded-2xl border border-green-500/30 max-w-md mx-4 shadow-2xl">
-                <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Level Complete!</h3>
-                <p className="text-gray-300 mb-4">Vault secured successfully</p>
+              <div className="text-center bg-gray-800/95 p-4 sm:p-8 rounded-2xl border border-green-500/30 max-w-md w-full shadow-2xl">
+                <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-400 mx-auto mb-3 sm:mb-4" />
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Level Complete!</h3>
+                <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">Vault secured successfully</p>
                 
                 {userCreatedPassword && (
-                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Key className="w-5 h-5 text-green-400" />
-                      <span className="text-white font-semibold">Your Secure Password:</span>
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 sm:p-4 mb-3 sm:mb-4">
+                    <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                      <Key className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                      <span className="text-white font-semibold text-sm sm:text-base">Your Secure Password:</span>
                     </div>
-                    <div className="bg-black/70 p-3 rounded border border-gray-600">
-                      <code className="text-green-400 font-mono text-sm break-all">
+                    <div className="bg-black/70 p-2 sm:p-3 rounded border border-gray-600">
+                      <code className="text-green-400 font-mono text-xs sm:text-sm break-all">
                         {userCreatedPassword}
                       </code>
                     </div>
@@ -1822,37 +1918,37 @@ export default function PasswordVault() {
                   </div>
                 )}
                 
-                <div className="bg-gray-700/80 p-4 rounded-xl border border-purple-500/30 mb-4">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="bg-gray-700/80 p-3 sm:p-4 rounded-xl border border-purple-500/30 mb-3 sm:mb-4">
+                  <div className="flex items-center justify-between mb-1 sm:mb-2">
                     <div className="flex items-center gap-2">
-                      <Key className="w-5 h-5 text-purple-400" />
-                      <span className="text-white font-semibold">Level 4 Password:</span>
+                      <Key className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                      <span className="text-white font-semibold text-sm sm:text-base">Level 4 Password:</span>
                     </div>
                     <button
                       onClick={copyPasswordToClipboard}
                       className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors"
                     >
-                      {passwordCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {passwordCopied ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : <Copy className="w-3 h-3 sm:w-4 sm:h-4" />}
                       <span className="text-xs">{passwordCopied ? "Copied!" : "Copy"}</span>
                     </button>
                   </div>
-                  <div className="bg-black/70 p-3 rounded border border-gray-600">
-                    <code className="text-green-400 font-mono text-sm break-all">
+                  <div className="bg-black/70 p-2 sm:p-3 rounded border border-gray-600">
+                    <code className="text-green-400 font-mono text-xs sm:text-sm break-all">
                       {levelPassword}
                     </code>
                   </div>
                 </div>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={resetGame}
-                    className="flex-1 bg-purple-500 text-white px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors"
+                    className="flex-1 bg-purple-500 text-white px-4 sm:px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors text-sm sm:text-base"
                   >
                     Play Again
                   </button>
                   <button
                     onClick={() => navigate("/levels")}
-                    className="flex-1 bg-cyan-500 text-white px-6 py-2 rounded-xl hover:bg-cyan-600 transition-colors"
+                    className="flex-1 bg-cyan-500 text-white px-4 sm:px-6 py-2 rounded-xl hover:bg-cyan-600 transition-colors text-sm sm:text-base"
                   >
                     Go to Levels
                   </button>
@@ -1865,15 +1961,15 @@ export default function PasswordVault() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-20"
+              className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-20 p-4"
             >
-              <div className="text-center bg-gray-800/95 p-8 rounded-2xl border border-red-500/30 max-w-md mx-4">
-                <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">Vault Breached!</h3>
-                <p className="text-gray-300 mb-4">Too many attacks penetrated your defenses</p>
+              <div className="text-center bg-gray-800/95 p-4 sm:p-6 rounded-2xl border border-red-500/30 max-w-md w-full">
+                <XCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-400 mx-auto mb-3 sm:mb-4" />
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Vault Breached!</h3>
+                <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">Too many attacks penetrated your defenses</p>
                 <button
                   onClick={resetGame}
-                  className="bg-purple-500 text-white px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors"
+                  className="bg-purple-500 text-white px-4 sm:px-6 py-2 rounded-xl hover:bg-purple-600 transition-colors text-sm sm:text-base"
                 >
                   Try Again
                 </button>
